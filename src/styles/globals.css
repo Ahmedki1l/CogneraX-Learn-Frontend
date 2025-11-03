@@ -1,0 +1,318 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(0 0% 3.9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(0 0% 3.9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(0 0% 3.9%);
+  --color-primary: hsl(174 69% 44%);
+  --color-primary-foreground: hsl(0 0% 98%);
+  --color-secondary: hsl(270 5% 95%);
+  --color-secondary-foreground: hsl(0 0% 9%);
+  --color-muted: hsl(270 5% 95%);
+  --color-muted-foreground: hsl(0 0% 45.1%);
+  --color-accent: hsl(270 5% 95%);
+  --color-accent-foreground: hsl(174 69% 44%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-border: hsl(270 5% 89%);
+  --color-input: hsl(270 5% 92%);
+  --color-ring: hsl(174 69% 44%);
+  --color-chart-1: hsl(174 69% 44%);
+  --color-chart-2: hsl(270 69% 44%);
+  --color-chart-3: hsl(197 37% 24%);
+  --color-chart-4: hsl(43 74% 66%);
+  --color-chart-5: hsl(27 87% 67%);
+  --radius: 0.5rem;
+  
+  /* CogneraX Brand Colors */
+  --color-cognerax-teal: hsl(174 69% 44%);
+  --color-cognerax-purple: hsl(270 69% 44%);
+  --color-cognerax-gradient-start: hsl(174 69% 44%);
+  --color-cognerax-gradient-end: hsl(270 69% 44%);
+}
+
+.dark {
+  --color-background: hsl(0 0% 3.9%);
+  --color-foreground: hsl(0 0% 98%);
+  --color-card: hsl(0 0% 3.9%);
+  --color-card-foreground: hsl(0 0% 98%);
+  --color-popover: hsl(0 0% 3.9%);
+  --color-popover-foreground: hsl(0 0% 98%);
+  --color-primary: hsl(0 0% 98%);
+  --color-primary-foreground: hsl(0 0% 9%);
+  --color-secondary: hsl(0 0% 14.9%);
+  --color-secondary-foreground: hsl(0 0% 98%);
+  --color-muted: hsl(0 0% 14.9%);
+  --color-muted-foreground: hsl(0 0% 63.9%);
+  --color-accent: hsl(0 0% 14.9%);
+  --color-accent-foreground: hsl(0 0% 98%);
+  --color-destructive: hsl(0 62.8% 30.6%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-border: hsl(0 0% 14.9%);
+  --color-input: hsl(0 0% 14.9%);
+  --color-ring: hsl(0 0% 83.1%);
+  --color-chart-1: hsl(220 70% 50%);
+  --color-chart-2: hsl(160 60% 45%);
+  --color-chart-3: hsl(30 80% 55%);
+  --color-chart-4: hsl(280 65% 60%);
+  --color-chart-5: hsl(340 75% 55%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* RTL Support */
+  .rtl .ml-auto {
+    margin-left: 0;
+    margin-right: auto;
+  }
+  
+  .rtl .mr-auto {
+    margin-right: 0;
+    margin-left: auto;
+  }
+  
+  .rtl .text-left {
+    text-align: right;
+  }
+  
+  .rtl .text-right {
+    text-align: left;
+  }
+  
+  .rtl .lg\:ml-72 {
+    margin-left: 0;
+    margin-right: 18rem;
+  }
+  
+  .rtl .rounded-r-none {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: var(--radius);
+    border-bottom-left-radius: var(--radius);
+  }
+  
+  .rtl .rounded-l-none {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+  }
+  
+  /* RTL Flexbox adjustments */
+  .rtl .flex-row {
+    flex-direction: row-reverse;
+  }
+  
+  .rtl .space-x-2 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
+    margin-right: calc(0.5rem * var(--tw-space-x-reverse));
+    margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
+  }
+  
+  .rtl .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
+    margin-right: calc(1rem * var(--tw-space-x-reverse));
+    margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+  }
+  
+  /* CogneraX Brand Utilities */
+  .bg-cognerax-gradient {
+    background: linear-gradient(135deg, var(--color-cognerax-gradient-start), var(--color-cognerax-gradient-end));
+  }
+  
+  .text-cognerax-gradient {
+    background: linear-gradient(135deg, var(--color-cognerax-gradient-start), var(--color-cognerax-gradient-end));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .border-cognerax-gradient {
+    border-image: linear-gradient(135deg, var(--color-cognerax-gradient-start), var(--color-cognerax-gradient-end)) 1;
+  }
+  
+  .shadow-cognerax {
+    box-shadow: 0 4px 20px -2px hsla(174, 69%, 44%, 0.15);
+  }
+  
+  /* Hide scrollbar while keeping functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Custom CogneraX branded scrollbar */
+  .scrollbar-cognerax {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-cognerax-teal) transparent;
+  }
+  
+  .scrollbar-cognerax::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .scrollbar-cognerax::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-cognerax::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--color-cognerax-gradient-start), var(--color-cognerax-gradient-end));
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .scrollbar-cognerax::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, hsl(174 69% 38%), hsl(270 69% 38%));
+    box-shadow: 0 2px 8px rgba(174, 69, 44, 0.3);
+  }
+  
+  .scrollbar-cognerax::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(135deg, hsl(174 69% 32%), hsl(270 69% 32%));
+  }
+  
+  .scrollbar-cognerax::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  
+  .scrollbar-cognerax::-webkit-scrollbar-button {
+    display: none;
+    height: 0;
+    width: 0;
+  }
+  
+  /* Global scrollbar styling for the entire app */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(174 69% 44%) transparent;
+  }
+  
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, hsl(174 69% 44%), hsl(270 69% 44%));
+    border-radius: 4px;
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, hsl(174 69% 38%), hsl(270 69% 38%));
+    box-shadow: 0 2px 12px rgba(174, 69, 44, 0.25);
+    transform: scale(1.05);
+  }
+  
+  *::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(135deg, hsl(174 69% 32%), hsl(270 69% 32%));
+    transform: scale(0.95);
+  }
+  
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  
+  /* Remove scrollbar arrows/buttons */
+  *::-webkit-scrollbar-button {
+    display: none;
+    height: 0;
+    width: 0;
+  }
+  
+  *::-webkit-scrollbar-button:start:decrement,
+  *::-webkit-scrollbar-button:end:increment {
+    display: none;
+  }
+  
+  /* Dark mode scrollbar adjustments */
+  .dark *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .dark *::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, hsl(174 69% 50%), hsl(270 69% 50%));
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, hsl(174 69% 55%), hsl(270 69% 55%));
+    box-shadow: 0 2px 12px rgba(174, 69, 44, 0.4);
+  }
+  
+  .animate-in {
+    animation: fade-in 0.5s ease-out;
+  }
+  
+  .fade-in-50 {
+    animation: fade-in-up 0.5s ease-out;
+  }
+  
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* AI Recreation specific animations */
+  .recreation-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+}
