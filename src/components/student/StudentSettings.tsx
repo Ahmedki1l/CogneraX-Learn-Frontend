@@ -43,6 +43,7 @@ import { Progress } from '../ui/progress';
 import { Slider } from '../ui/slider';
 import { FileUpload } from '../shared/FileUpload';
 import { api } from '../../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 interface StudentSettingsProps {
   user?: any;
@@ -52,6 +53,7 @@ interface StudentSettingsProps {
 export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
   const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
+  const { t, isRTL } = useLanguage();
 
   // Profile state - Initialize with user data
   const [profileData, setProfileData] = useState({
@@ -267,13 +269,13 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Student Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('studentSettings.title')}</h1>
           <p className="text-gray-600 mt-1">
-            Customize your learning experience and manage your account
+            {t('studentSettings.subtitle')}
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -283,11 +285,11 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="learning">Learning</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsTrigger value="profile">{t('studentSettings.profile')}</TabsTrigger>
+          <TabsTrigger value="learning">{t('studentSettings.learning')}</TabsTrigger>
+          <TabsTrigger value="notifications">{t('studentSettings.notifications')}</TabsTrigger>
+          <TabsTrigger value="privacy">{t('studentSettings.privacy')}</TabsTrigger>
+          <TabsTrigger value="progress">{t('studentSettings.progress')}</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -295,11 +297,11 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2 text-blue-600" />
-                Student Profile
+                <User className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-blue-600`} />
+                {t('studentSettings.studentProfile')}
               </CardTitle>
               <CardDescription>
-                Update your personal information and academic details
+                {t('studentSettings.updatePersonalInfo')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -312,11 +314,11 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 </Avatar>
                 <div className="space-y-2">
                   <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Change Photo
+                    <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                    {t('studentSettings.changePhoto')}
                   </Button>
                   <p className="text-sm text-gray-500">
-                    JPG, GIF or PNG. Max size 2MB.
+                    {t('studentSettings.photoRequirements')}
                   </p>
                 </div>
               </div>
@@ -324,7 +326,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    First Name
+                    {t('studentSettings.firstName')}
                   </label>
                   <Input 
                     value={profileData.firstName}
@@ -333,7 +335,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Name
+                    {t('studentSettings.lastName')}
                   </label>
                   <Input 
                     value={profileData.lastName}
@@ -342,7 +344,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
+                    {t('studentSettings.email')}
                   </label>
                   <Input 
                     type="email" 
@@ -352,7 +354,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
+                    {t('studentSettings.phoneNumber')}
                   </label>
                   <Input 
                     value={profileData.phone}
@@ -361,7 +363,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Student ID
+                    {t('studentSettings.studentId')}
                   </label>
                   <Input 
                     value={profileData.studentId}
@@ -371,7 +373,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Major
+                    {t('studentSettings.major')}
                   </label>
                   <Input 
                     value={profileData.major}
@@ -380,7 +382,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Academic Year
+                    {t('studentSettings.academicYear')}
                   </label>
                   <Select 
                     value={profileData.year} 
@@ -390,17 +392,17 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="freshman">Freshman</SelectItem>
-                      <SelectItem value="sophomore">Sophomore</SelectItem>
-                      <SelectItem value="junior">Junior</SelectItem>
-                      <SelectItem value="senior">Senior</SelectItem>
-                      <SelectItem value="graduate">Graduate</SelectItem>
+                      <SelectItem value="freshman">{t('studentSettings.freshman')}</SelectItem>
+                      <SelectItem value="sophomore">{t('studentSettings.sophomore')}</SelectItem>
+                      <SelectItem value="junior">{t('studentSettings.junior')}</SelectItem>
+                      <SelectItem value="senior">{t('studentSettings.senior')}</SelectItem>
+                      <SelectItem value="graduate">{t('studentSettings.graduate')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Current GPA
+                    {t('studentSettings.currentGPA')}
                   </label>
                   <Input 
                     value={profileData.gpa}
@@ -412,24 +414,24 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bio
+                  {t('studentSettings.bio')}
                 </label>
                 <Textarea
                   value={profileData.bio}
                   onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Tell us about yourself..."
+                  placeholder={t('studentSettings.bioPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Learning Goals
+                  {t('studentSettings.learningGoals')}
                 </label>
                 <Textarea
                   value={profileData.goals}
                   onChange={(e) => setProfileData(prev => ({ ...prev, goals: e.target.value }))}
-                  placeholder="What do you want to achieve?"
+                  placeholder={t('studentSettings.goalsPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -437,7 +439,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    LinkedIn Profile
+                    {t('studentSettings.linkedInProfile')}
                   </label>
                   <Input 
                     value={profileData.linkedIn}
@@ -447,7 +449,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GitHub Profile
+                    {t('studentSettings.githubProfile')}
                   </label>
                   <Input 
                     value={profileData.github}
@@ -457,7 +459,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Portfolio Website
+                    {t('studentSettings.portfolioWebsite')}
                   </label>
                   <Input 
                     value={profileData.portfolio}
@@ -475,12 +477,12 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 {isSaving ? (
                   <>
                     <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                    Saving...
+                    {t('studentSettings.saving')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save Profile
+                    {t('studentSettings.saveProfile')}
                   </>
                 )}
               </Button>
@@ -494,19 +496,19 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Brain className="h-5 w-5 mr-2 text-green-600" />
-                Learning Preferences
+                {t('studentSettings.learningPreferences')}
               </CardTitle>
               <CardDescription>
-                Customize your learning experience and study settings
+                {t('studentSettings.learningPreferencesDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Study Habits</h4>
+                <h4 className="font-medium text-gray-900">{t('studentSettings.studyHabits')}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preferred Study Time
+                      {t('studentSettings.preferredStudyTime')}
                     </label>
                     <Select 
                       value={learningPrefs.preferredStudyTime} 
@@ -516,17 +518,17 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="morning">Morning (6 AM - 12 PM)</SelectItem>
-                        <SelectItem value="afternoon">Afternoon (12 PM - 6 PM)</SelectItem>
-                        <SelectItem value="evening">Evening (6 PM - 10 PM)</SelectItem>
-                        <SelectItem value="night">Night (10 PM - 2 AM)</SelectItem>
+                        <SelectItem value="morning">{t('studentSettings.morning')}</SelectItem>
+                        <SelectItem value="afternoon">{t('studentSettings.afternoon')}</SelectItem>
+                        <SelectItem value="evening">{t('studentSettings.evening')}</SelectItem>
+                        <SelectItem value="night">{t('studentSettings.night')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Learning Style
+                      {t('studentSettings.learningStyle')}
                     </label>
                     <Select 
                       value={learningPrefs.learningStyle} 
@@ -536,10 +538,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="visual">Visual (diagrams, videos)</SelectItem>
-                        <SelectItem value="auditory">Auditory (lectures, discussions)</SelectItem>
-                        <SelectItem value="kinesthetic">Hands-on (practice, exercises)</SelectItem>
-                        <SelectItem value="reading">Reading/Writing</SelectItem>
+                        <SelectItem value="visual">{t('studentSettings.visual')}</SelectItem>
+                        <SelectItem value="auditory">{t('studentSettings.auditory')}</SelectItem>
+                        <SelectItem value="kinesthetic">{t('studentSettings.kinesthetic')}</SelectItem>
+                        <SelectItem value="reading">{t('studentSettings.readingWriting')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -548,7 +550,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Daily Study Goal: {learningPrefs.studyGoalHours} hours
+                      {t('studentSettings.dailyStudyGoal')}: {learningPrefs.studyGoalHours} {t('studentSettings.hours')}
                     </label>
                     <Slider
                       value={[learningPrefs.studyGoalHours]}
@@ -562,7 +564,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Weekly Study Goal: {learningPrefs.weeklyGoal} hours
+                      {t('studentSettings.weeklyStudyGoal')}: {learningPrefs.weeklyGoal} {t('studentSettings.hours')}
                     </label>
                     <Slider
                       value={[learningPrefs.weeklyGoal]}
@@ -579,15 +581,15 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Video & Media Settings</h4>
+                <h4 className="font-medium text-gray-900">{t('studentSettings.videoMediaSettings')}</h4>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Auto-play videos
+                        {t('studentSettings.autoPlayVideos')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Automatically start playing lesson videos
+                        {t('studentSettings.autoPlayVideosDesc')}
                       </p>
                     </div>
                     <Switch
@@ -599,10 +601,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Show subtitles
+                        {t('studentSettings.showSubtitles')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Display closed captions when available
+                        {t('studentSettings.showSubtitlesDesc')}
                       </p>
                     </div>
                     <Switch
@@ -614,7 +616,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Video Playback Speed
+                        {t('studentSettings.videoPlaybackSpeed')}
                       </label>
                       <Select 
                         value={learningPrefs.playbackSpeed} 
@@ -626,7 +628,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                         <SelectContent>
                           <SelectItem value="0.5">0.5x</SelectItem>
                           <SelectItem value="0.75">0.75x</SelectItem>
-                          <SelectItem value="1.0">1.0x (Normal)</SelectItem>
+                          <SelectItem value="1.0">1.0x ({t('studentSettings.normal')})</SelectItem>
                           <SelectItem value="1.25">1.25x</SelectItem>
                           <SelectItem value="1.5">1.5x</SelectItem>
                           <SelectItem value="2.0">2.0x</SelectItem>
@@ -636,7 +638,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Text Size
+                        {t('studentSettings.textSize')}
                       </label>
                       <Select 
                         value={learningPrefs.fontSize} 
@@ -646,10 +648,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="small">Small</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="large">Large</SelectItem>
-                          <SelectItem value="extra-large">Extra Large</SelectItem>
+                          <SelectItem value="small">{t('studentSettings.small')}</SelectItem>
+                          <SelectItem value="medium">{t('studentSettings.medium')}</SelectItem>
+                          <SelectItem value="large">{t('studentSettings.large')}</SelectItem>
+                          <SelectItem value="extra-large">{t('studentSettings.extraLarge')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -660,15 +662,15 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Interface Settings</h4>
+                <h4 className="font-medium text-gray-900">{t('studentSettings.interfaceSettings')}</h4>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Dark mode
+                        {t('studentSettings.darkMode')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Use dark theme for better focus
+                        {t('studentSettings.darkModeDesc')}
                       </p>
                     </div>
                     <Switch
@@ -680,10 +682,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Sound effects
+                        {t('studentSettings.soundEffects')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Play sounds for notifications and achievements
+                        {t('studentSettings.soundEffectsDesc')}
                       </p>
                     </div>
                     <Switch
@@ -695,10 +697,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Focus mode
+                        {t('studentSettings.focusMode')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Hide distracting elements during lessons
+                        {t('studentSettings.focusModeDesc')}
                       </p>
                     </div>
                     <Switch
@@ -717,12 +719,12 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                 {isSaving ? (
                   <>
                     <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                    Saving...
+                    {t('studentSettings.saving')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save Preferences
+                    {t('studentSettings.savePreferences')}
                   </>
                 )}
               </Button>
@@ -736,23 +738,23 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Bell className="h-5 w-5 mr-2 text-yellow-600" />
-                Notification Preferences
+                {t('studentSettings.notificationPreferences')}
               </CardTitle>
               <CardDescription>
-                Choose how you want to be notified about course activities
+                {t('studentSettings.notificationPreferencesDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Course Activities</h4>
+                <h4 className="font-medium text-gray-900">{t('studentSettings.courseActivities')}</h4>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Assignment due dates
+                        {t('studentSettings.assignmentDueDates')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Reminders before assignments are due
+                        {t('studentSettings.assignmentDueDatesDesc')}
                       </p>
                     </div>
                     <Switch
@@ -764,10 +766,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Grade updates
+                        {t('studentSettings.gradeUpdates')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        When new grades are posted
+                        {t('studentSettings.gradeUpdatesDesc')}
                       </p>
                     </div>
                     <Switch
@@ -779,10 +781,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Course announcements
+                        {t('studentSettings.courseAnnouncements')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Important updates from instructors
+                        {t('studentSettings.courseAnnouncementsDesc')}
                       </p>
                     </div>
                     <Switch
@@ -794,10 +796,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Discussion replies
+                        {t('studentSettings.discussionReplies')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        When someone replies to your posts
+                        {t('studentSettings.discussionRepliesDesc')}
                       </p>
                     </div>
                     <Switch
@@ -811,15 +813,15 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Study & Progress</h4>
+                <h4 className="font-medium text-gray-900">{t('studentSettings.studyProgress')}</h4>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Study reminders
+                        {t('studentSettings.studyReminders')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Daily reminders to maintain study goals
+                        {t('studentSettings.studyRemindersDesc')}
                       </p>
                     </div>
                     <Switch
@@ -831,10 +833,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Achievement unlocked
+                        {t('studentSettings.achievementUnlocked')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        When you earn new badges or achievements
+                        {t('studentSettings.achievementUnlockedDesc')}
                       </p>
                     </div>
                     <Switch
@@ -846,10 +848,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Weekly progress report
+                        {t('studentSettings.weeklyProgressReport')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Summary of your learning activities
+                        {t('studentSettings.weeklyProgressReportDesc')}
                       </p>
                     </div>
                     <Switch
@@ -863,15 +865,15 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Delivery Settings</h4>
+                <h4 className="font-medium text-gray-900">{t('studentSettings.deliverySettings')}</h4>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="text-sm font-medium text-gray-700">
-                        Push notifications
+                        {t('studentSettings.pushNotifications')}
                       </label>
                       <p className="text-xs text-gray-500">
-                        Receive browser notifications
+                        {t('studentSettings.pushNotificationsDesc')}
                       </p>
                     </div>
                     <Switch
@@ -882,7 +884,7 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Digest Frequency
+                      {t('studentSettings.emailDigestFrequency')}
                     </label>
                     <Select 
                       value={notifications.emailDigest} 
@@ -892,10 +894,10 @@ export function StudentSettings({ user, onLogout }: StudentSettingsProps = {}) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="immediate">Immediate</SelectItem>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="never">Never</SelectItem>
+                        <SelectItem value="immediate">{t('studentSettings.immediate')}</SelectItem>
+                        <SelectItem value="daily">{t('studentSettings.daily')}</SelectItem>
+                        <SelectItem value="weekly">{t('studentSettings.weekly')}</SelectItem>
+                        <SelectItem value="never">{t('studentSettings.never')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -14,6 +14,7 @@ import {
 import { Button } from '../ui/button';
 import { Slider } from '../ui/slider';
 import { toast } from 'sonner';
+import { useLanguage } from '../context/LanguageContext';
 
 interface CustomVideoPlayerProps {
   src: string;
@@ -23,6 +24,7 @@ interface CustomVideoPlayerProps {
 }
 
 export function CustomVideoPlayer({ src, poster, title, className = '' }: CustomVideoPlayerProps) {
+  const { t, isRTL } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   

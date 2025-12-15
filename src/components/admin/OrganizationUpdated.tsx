@@ -57,6 +57,7 @@ import { Textarea } from '../ui/textarea';
 import { toast } from "sonner";
 import { api } from '../../services/api';
 import { PdfViewer } from '../shared/PdfViewer';
+import { useLanguage } from '../context/LanguageContext';
 
 interface OrganizationProps {
   onNavigateToLesson?: (lesson: any) => void;

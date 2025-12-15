@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../ui/badge';
 import { Brain, Sparkles, RefreshCw, CheckCircle, AlertCircle, HelpCircle } from 'lucide-react';
 import { api } from '../../services/api';
+import { useAICredits } from '../context/AICreditsContext';
 import { toast } from 'sonner';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Question {
   question: string;
@@ -20,6 +22,8 @@ interface Question {
 }
 
 export function AIQuestionGenerator() {
+  const { t, isRTL } = useLanguage();
+  const { refresh: refreshAICredits } = useAICredits();
   const [content, setContent] = useState('');
   const [questionType, setQuestionType] = useState('multiple-choice');
   const [difficulty, setDifficulty] = useState('medium');
@@ -44,18 +48,23 @@ export function AIQuestionGenerator() {
     try {
       const response = await api.ai.generateQuestions({
         content,
-        questionType,
+        courseId: course,
+        count: numberOfQuestions,
+        questionTypes: [questionType],
         difficulty,
-        numberOfQuestions,
-        field,
-        course
+        autoAddToBank: true,
       });
 
       if (response) {
-        setGeneratedQuestions(response.questions || []);
+        const generated =
+          response.data?.questions ||
+          response.questions ||
+          [];
+        setGeneratedQuestions(generated);
         toast.success(
-          `Generated ${response.questionsGenerated || response.questions?.length || 0} questions! Used ${response.creditsUsed || 0} AI credits. Questions added to question bank.`
+          `Generated ${generated.length || response.questionsGenerated || 0} questions! Used ${response.creditsUsed || 0} AI credits. Questions added to question bank.`
         );
+        void refreshAICredits();
       }
     } catch (error: any) {
       console.error('Question generation failed:', error);
@@ -88,7 +97,7 @@ export function AIQuestionGenerator() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

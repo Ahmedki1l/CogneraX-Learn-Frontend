@@ -35,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Progress } from '../ui/progress';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ResourceManagerProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export function ResourceManager({
   initialResources = [], 
   onResourcesUpdate 
 }: ResourceManagerProps) {
+  const { t, isRTL } = useLanguage();
   const [resources, setResources] = useState(initialResources);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');

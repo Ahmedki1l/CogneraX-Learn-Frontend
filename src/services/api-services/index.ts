@@ -19,6 +19,11 @@ import { CartApiService } from './cart';
 import { InvitationApiService } from './invitation';
 import { SystemApiService } from './system';
 import { InstructorApiService } from './instructor';
+import { ExamApiService } from './exam';
+import { QuestionApiService } from './question';
+import { GradebookApiService } from './gradebook';
+import { CommunicationApiService } from './communication';
+import { ParentApiService } from './parent';
 
 export class ApiService extends BaseApiService {
   // Initialize all API services
@@ -41,6 +46,11 @@ export class ApiService extends BaseApiService {
   public invitation: InvitationApiService;
   public system: SystemApiService;
   public instructor: InstructorApiService;
+  public exam: ExamApiService;
+  public question: QuestionApiService;
+  public gradebook: GradebookApiService;
+  public communication: CommunicationApiService;
+  public parent: ParentApiService;
 
   constructor() {
     super();
@@ -65,6 +75,11 @@ export class ApiService extends BaseApiService {
     this.invitation = new InvitationApiService();
     this.system = new SystemApiService();
     this.instructor = new InstructorApiService();
+    this.exam = new ExamApiService();
+    this.question = new QuestionApiService();
+    this.gradebook = new GradebookApiService();
+    this.communication = new CommunicationApiService();
+    this.parent = new ParentApiService();
 
     // Sync tokens across all services
     this.syncTokens();
@@ -86,6 +101,7 @@ export class ApiService extends BaseApiService {
       this.upload.setTokens(token, refreshToken);
       this.organization.setTokens(token, refreshToken);
       this.field.setTokens(token, refreshToken);
+      this.gradebook.setTokens(token, refreshToken);
       this.lesson.setTokens(token, refreshToken);
       this.quiz.setTokens(token, refreshToken);
       this.assignment.setTokens(token, refreshToken);
@@ -95,6 +111,10 @@ export class ApiService extends BaseApiService {
       this.invitation.setTokens(token, refreshToken);
       this.system.setTokens(token, refreshToken);
       this.instructor.setTokens(token, refreshToken);
+      this.exam.setTokens(token, refreshToken);
+      this.question.setTokens(token, refreshToken);
+      this.communication.setTokens(token, refreshToken);
+      this.parent.setTokens(token, refreshToken);
     }
   }
 
@@ -113,6 +133,7 @@ export class ApiService extends BaseApiService {
     this.upload.setTokens(token, refreshToken);
     this.organization.setTokens(token, refreshToken);
     this.field.setTokens(token, refreshToken);
+    this.gradebook.setTokens(token, refreshToken);
     this.instructor.setTokens(token, refreshToken);
     this.lesson.setTokens(token, refreshToken);
     this.quiz.setTokens(token, refreshToken);
@@ -122,6 +143,10 @@ export class ApiService extends BaseApiService {
     this.cart.setTokens(token, refreshToken);
     this.invitation.setTokens(token, refreshToken);
     this.system.setTokens(token, refreshToken);
+    this.exam.setTokens(token, refreshToken);
+    this.question.setTokens(token, refreshToken);
+    this.communication.setTokens(token, refreshToken);
+    this.parent.setTokens(token, refreshToken);
   }
 
   // Override clearTokens to sync across all services
@@ -139,6 +164,7 @@ export class ApiService extends BaseApiService {
     this.upload.clearTokens();
     this.organization.clearTokens();
     this.field.clearTokens();
+    this.gradebook.clearTokens();
     this.instructor.clearTokens();
     this.lesson.clearTokens();
     this.quiz.clearTokens();
@@ -148,18 +174,43 @@ export class ApiService extends BaseApiService {
     this.cart.clearTokens();
     this.invitation.clearTokens();
     this.system.clearTokens();
+    this.exam.clearTokens();
+    this.question.clearTokens();
+    this.communication.clearTokens();
+    this.parent.clearTokens();
   }
 
   // Convenience methods for common operations
   async login(credentials: LoginCredentials): Promise<User> {
     const user = await this.auth.login(credentials);
+    // Reload tokens from storage to get the new token set by auth service
+    this.loadTokensFromStorage();
     this.syncTokens();
+    
+    // Force sync with explicit token read if loadTokensFromStorage doesn't work as expected immediately
+    // (localStorage write might be async-ish in some browsers/environments but usually sync)
+    // Double check to be sure we propagate the NEW token
+    const newToken = localStorage.getItem('token');
+    const newRefreshToken = localStorage.getItem('refreshToken');
+    if (newToken && newRefreshToken) {
+        this.setTokens(newToken, newRefreshToken);
+    }
+    
     return user;
   }
 
   async register(data: RegisterData): Promise<User> {
     const user = await this.auth.register(data);
+    // Reload tokens from storage to get the new token set by auth service
+    this.loadTokensFromStorage();
     this.syncTokens();
+    
+    const newToken = localStorage.getItem('token');
+    const newRefreshToken = localStorage.getItem('refreshToken');
+    if (newToken && newRefreshToken) {
+        this.setTokens(newToken, newRefreshToken);
+    }
+    
     return user;
   }
 
@@ -371,6 +422,11 @@ export * from './forum';
 export * from './cart';
 export * from './invitation';
 export * from './system';
+export * from './exam';
+export * from './question';
+export * from './gradebook';
+export * from './communication';
+export * from './parent';
 
 // Default export
 export default api;

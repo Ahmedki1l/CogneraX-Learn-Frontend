@@ -34,6 +34,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAICredits } from '../context/AICreditsContext';
 import { api } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -45,46 +46,42 @@ import { Progress } from '../ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { CourseCreator } from './CourseCreator';
 import { ResourceManager } from '../tools/ResourceManager';
+import type { Course, AccessibleField } from '../../interfaces/course.types';
+import { useLanguage } from '../context/LanguageContext';
 
 interface CourseManagementProps {
   user?: any;
+  openCreateModal?: boolean;
 }
 
-interface Course {
+// Extended Course interface for CourseManagement component
+interface CourseManagementCourse extends Course {
   id: string | number;
-  title: string;
-  description: string;
-  status: string;
-  field?: string;
-  category?: string;
-  level?: string;
-  students: number; // Made required
-  maxStudents: number; // Made required
+  students: number;
+  maxStudents: number;
   startDate?: string;
   endDate?: string;
   progress?: number;
-  rating: number; // Made required with default
   reviews?: number;
-  lessons?: number;
   assignments?: number;
   quizzes?: number;
   resources?: number;
   lastActivity?: string;
-  thumbnail?: string | null;
 }
 
-export function CourseManagement({ user }: CourseManagementProps = {}) {
+export function CourseManagement({ user, openCreateModal = false }: CourseManagementProps = {}) {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedFieldFilter, setSelectedFieldFilter] = useState<string>('all');
-  const [showCourseCreator, setShowCourseCreator] = useState(false);
+  const [showCourseCreator, setShowCourseCreator] = useState(openCreateModal);
   const [showResourceManager, setShowResourceManager] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [editingCourse, setEditingCourse] = useState<CourseManagementCourse | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<CourseManagementCourse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [accessibleFields, setAccessibleFields] = useState<any[]>([]);
+  const [accessibleFields, setAccessibleFields] = useState<AccessibleField[]>([]);
   
   // Navigation state: 'fields' | 'field-detail' | 'course-detail'
   const [currentView, setCurrentView] = useState<'fields' | 'field-detail' | 'course-detail'>('fields');
@@ -163,11 +160,18 @@ export function CourseManagement({ user }: CourseManagementProps = {}) {
     }
   }, [user?.id, user?._id]);
 
-  // Mock AI credits data (in real app, this would come from props/context)
+  const { balance: aiBalance, summary: aiSummary } = useAICredits();
+  const availableCredits =
+    (aiSummary?.available ?? aiSummary?.remaining ?? aiBalance ?? 0) as number;
+  const usedCredits = (aiSummary?.used ?? 0) as number;
+  const totalCredits =
+    (aiSummary?.total ?? (typeof usedCredits === 'number' ? usedCredits : 0) +
+      (typeof availableCredits === 'number' ? availableCredits : 0)) as number;
+
   const aiCredits = {
-    available: user?.aiCredits || 150,
-    used: user?.aiCreditsUsed || 45,
-    total: user?.aiCreditsTotal || 200
+    available: availableCredits,
+    used: typeof usedCredits === 'number' ? usedCredits : 0,
+    total: typeof totalCredits === 'number' ? totalCredits : availableCredits
   };
 
   // Compute filtered fields based on selection
@@ -438,7 +442,7 @@ export function CourseManagement({ user }: CourseManagementProps = {}) {
               size="sm" 
               variant="outline" 
               onClick={() => {
-                const field = accessibleFields.find(f => (f._id || f.id) === course.fieldId);
+                const field = accessibleFields.find(f => f._id === course.fieldId);
                 if (field) {
                   handleViewField(field);
                 }
@@ -616,17 +620,17 @@ export function CourseManagement({ user }: CourseManagementProps = {}) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Course Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('courseManagement.title')}</h1>
           <p className="text-gray-600 mt-1">
             {currentView === 'field-detail' && selectedField 
               ? `Courses in ${selectedField.name}` 
               : currentView === 'course-detail' && selectedCourseForDetail
               ? `Lessons in ${selectedCourseForDetail.title}`
-              : 'Create, manage, and track your courses'}
+              : t('courseManagement.subtitle')}
           </p>
           {renderBreadcrumb()}
         </div>
@@ -637,7 +641,7 @@ export function CourseManagement({ user }: CourseManagementProps = {}) {
               className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Create Course
+              {t('courseManagement.createCourse')}
             </Button>
           )}
         </div>
@@ -652,7 +656,7 @@ export function CourseManagement({ user }: CourseManagementProps = {}) {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Courses</p>
+                    <p className="text-sm font-medium text-gray-600">{t('courseManagement.totalCourses')}</p>
                     <p className="text-2xl font-bold text-gray-900">{allCourses.length}</p>
                   </div>
                   <BookOpen className="h-8 w-8 text-teal-600" />
@@ -664,7 +668,7 @@ export function CourseManagement({ user }: CourseManagementProps = {}) {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Active Courses</p>
+                    <p className="text-sm font-medium text-gray-600">{t('courseManagement.activeCourses')}</p>
                     <p className="text-2xl font-bold text-gray-900">
                       {allCourses.filter(c => c.status === 'active').length}
                     </p>
@@ -678,7 +682,7 @@ export function CourseManagement({ user }: CourseManagementProps = {}) {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Students</p>
+                    <p className="text-sm font-medium text-gray-600">{t('courseManagement.totalStudents')}</p>
                     <p className="text-2xl font-bold text-gray-900">
                       {allCourses.reduce((sum, course) => sum + (course.students || 0), 0)}
                     </p>
@@ -692,7 +696,7 @@ export function CourseManagement({ user }: CourseManagementProps = {}) {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Avg. Rating</p>
+                    <p className="text-sm font-medium text-gray-600">{t('courseManagement.avgRating')}</p>
                     <p className="text-2xl font-bold text-gray-900">
                       {allCourses.filter(c => c.rating > 0).length > 0 
                         ? (allCourses.reduce((sum, course) => sum + (course.rating || 0), 0) / allCourses.filter(c => c.rating > 0).length).toFixed(1)

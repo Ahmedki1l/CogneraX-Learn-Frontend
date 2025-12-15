@@ -66,7 +66,7 @@ interface DigitalCredential {
 }
 
 export const Certificates: React.FC<CertificatesProps> = ({ user }) => {
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [activeTab, setActiveTab] = useState('certificates');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -450,7 +450,7 @@ export const Certificates: React.FC<CertificatesProps> = ({ user }) => {
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>

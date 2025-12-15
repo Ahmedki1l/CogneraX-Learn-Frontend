@@ -2,14 +2,14 @@ import { BaseApiService } from './base';
 
 export class AIApiService extends BaseApiService {
   // AI Content Analysis
-  async analyzeContent(content: {
-    text: string;
-    type: 'lesson' | 'assignment' | 'quiz' | 'course';
+  async analyzeContent(payload: {
+    content: string;
+    analysisType?: string;
     language?: string;
   }): Promise<any> {
-    return this.request('/ai/content/analyze', {
+    return this.request('/ai/analyze-content', {
       method: 'POST',
-      body: JSON.stringify(content),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -45,68 +45,45 @@ export class AIApiService extends BaseApiService {
   }
 
   // AI Question Generation
-  async generateQuestions(content: {
-    text: string;
-    type: 'multiple-choice' | 'true-false' | 'short-answer' | 'essay';
+  async generateQuestions(payload: {
+    content: string;
+    courseId: string;
     count: number;
-    difficulty: 'easy' | 'medium' | 'hard';
-    topics?: string[];
+    questionTypes?: string[];
+    difficulty?: string;
+    autoAddToBank?: boolean;
+    language?: string;
   }): Promise<any> {
-    return this.request('/ai/questions/generate', {
+    return this.request('/ai/generate-questions', {
       method: 'POST',
-      body: JSON.stringify(content),
+      body: JSON.stringify(payload),
     });
   }
 
-  async generateQuizFromContent(content: {
-    text: string;
-    questionCount: number;
-    timeLimit?: number;
-    difficulty: 'easy' | 'medium' | 'hard';
+  async generateExam(payload: {
+    content: string;
+    courseId: string;
+    examConfig: Record<string, any>;
+    autoAddToBank?: boolean;
+    language?: string;
   }): Promise<any> {
-    return this.request('/ai/quiz/generate', {
+    return this.request('/ai/generate-exam', {
       method: 'POST',
-      body: JSON.stringify(content),
-    });
-  }
-
-  async generateExamFromCourse(courseId: string, examConfig: {
-    questionCount: number;
-    timeLimit: number;
-    difficulty: 'easy' | 'medium' | 'hard';
-    topics?: string[];
-  }): Promise<any> {
-    return this.request(`/ai/exam/generate/${courseId}`, {
-      method: 'POST',
-      body: JSON.stringify(examConfig),
+      body: JSON.stringify(payload),
     });
   }
 
   // AI Essay Grading
-  async gradeEssay(essay: {
-    text: string;
-    prompt: string;
-    rubric?: Array<{
-      criterion: string;
-      weight: number;
-      description: string;
-    }>;
-    maxPoints?: number;
+  async gradeEssay(payload: {
+    essayContent: string;
+    rubric: string;
+    maxScore?: number;
+    submissionId?: string;
+    language?: string;
   }): Promise<any> {
-    return this.request('/ai/essay/grade', {
+    return this.request('/ai/grade-essay', {
       method: 'POST',
-      body: JSON.stringify(essay),
-    });
-  }
-
-  async getEssayFeedback(essayId: string): Promise<any> {
-    return this.request(`/ai/essay/${essayId}/feedback`);
-  }
-
-  async generateEssayRubric(topic: string, level: string): Promise<any> {
-    return this.request('/ai/essay/rubric', {
-      method: 'POST',
-      body: JSON.stringify({ topic, level }),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -187,15 +164,14 @@ export class AIApiService extends BaseApiService {
   }
 
   // AI Content Recreation
-  async recreateContent(originalContent: {
-    text: string;
-    type: 'lesson' | 'assignment' | 'quiz';
-    style: 'formal' | 'casual' | 'academic' | 'conversational';
-    length: 'short' | 'medium' | 'long';
+  async recreateContent(payload: {
+    originalContent: string;
+    enhancementType?: string;
+    language?: string;
   }): Promise<any> {
-    return this.request('/ai/content/recreate', {
+    return this.request('/ai/recreate-content', {
       method: 'POST',
-      body: JSON.stringify(originalContent),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -223,34 +199,18 @@ export class AIApiService extends BaseApiService {
   }
 
   // AI Teaching Plan Generation
-  async generateTeachingPlan(courseData: {
-    title: string;
-    description: string;
-    duration: number;
-    level: string;
-    objectives: string[];
-    prerequisites?: string[];
+  async generateTeachingPlan(payload: {
+    content: string;
+    sessionMinutes: number;
+    studentLevel?: string;
+    learningObjectives?: string[];
+    teachingStyle?: string;
+    language?: string;
   }): Promise<any> {
-    return this.request('/ai/teaching-plan/generate', {
+    return this.request('/ai/generate-teaching-plan', {
       method: 'POST',
-      body: JSON.stringify(courseData),
+      body: JSON.stringify(payload),
     });
-  }
-
-  async customizeTeachingPlan(planId: string, customizations: {
-    teachingStyle: string;
-    timeConstraints: number;
-    resources: string[];
-    assessmentMethods: string[];
-  }): Promise<any> {
-    return this.request(`/ai/teaching-plan/${planId}/customize`, {
-      method: 'PATCH',
-      body: JSON.stringify(customizations),
-    });
-  }
-
-  async getTeachingPlan(planId: string): Promise<any> {
-    return this.request(`/ai/teaching-plan/${planId}`);
   }
 
   // AI Credits Management
@@ -340,9 +300,9 @@ export class AIApiService extends BaseApiService {
   }
 
   async allocateAICredits(data: {
-    instructorId: string;
+    userId: string;
     amount: number;
-    reason: string;
+    description?: string;
   }): Promise<any> {
     return this.request('/ai/credits/allocate', {
       method: 'POST',
@@ -352,9 +312,9 @@ export class AIApiService extends BaseApiService {
 
   async bulkAllocateCredits(data: {
     allocations: Array<{
-      instructorId: string;
+      userId: string;
       amount: number;
-      reason: string;
+      description?: string;
     }>;
   }): Promise<any> {
     return this.request('/ai/ai-credits/bulk-allocate', {
@@ -363,40 +323,23 @@ export class AIApiService extends BaseApiService {
     });
   }
 
-  // AI Content Analysis (for ContentAnalysis component)
-  async analyzeContent(data: {
-    content: string;
-    type: string;
-    level?: string;
+  async getAIHistory(filters?: {
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
   }): Promise<any> {
-    return this.request('/ai/analyze-content', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // AI Content Recreation (for ContentAnalysis component)
-  async recreateContent(data: {
-    content: string;
-    style: string;
-    level: string;
-  }): Promise<any> {
-    return this.request('/ai/recreate-content', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // AI Teaching Plan Generation (for ContentAuthoringTools component)
-  async generateTeachingPlan(data: {
-    topic: string;
-    duration: string;
-    level: string;
-  }): Promise<any> {
-    return this.request('/ai/generate-teaching-plan', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request(`/ai/history${query ? `?${query}` : ''}`);
   }
 
   // AI Recommendations (for AIRecommendationEngine component)

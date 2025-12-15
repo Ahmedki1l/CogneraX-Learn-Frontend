@@ -40,6 +40,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
 import { CourseCreator } from './CourseCreator';
 import { ResourceManager } from '../tools/ResourceManager';
+import { useLanguage } from '../context/LanguageContext';
 
 interface InstructorSettingsProps {
   user?: any;
@@ -52,6 +53,7 @@ export function InstructorSettings({ user, onLogout }: InstructorSettingsProps =
   const [showCourseCreator, setShowCourseCreator] = useState(false);
   const [showResourceManager, setShowResourceManager] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
+  const { t, isRTL } = useLanguage();
 
   // Profile state
   const [profileData, setProfileData] = useState({
@@ -179,27 +181,27 @@ export function InstructorSettings({ user, onLogout }: InstructorSettingsProps =
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Instructor Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('instructorSettings.title')}</h1>
           <p className="text-gray-600 mt-1">
-            Manage your teaching profile, courses, and preferences
+            {t('instructorSettings.subtitle')}
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
           <SettingsIcon className="h-6 w-6 text-gray-600" />
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="courses">My Courses</TabsTrigger>
-          <TabsTrigger value="teaching">Teaching</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="profile">{t('instructorSettings.tabs.profile')}</TabsTrigger>
+          <TabsTrigger value="courses">{t('instructorSettings.tabs.courses')}</TabsTrigger>
+          <TabsTrigger value="teaching">{t('instructorSettings.tabs.teaching')}</TabsTrigger>
+          <TabsTrigger value="notifications">{t('instructorSettings.tabs.notifications')}</TabsTrigger>
+          <TabsTrigger value="analytics">{t('instructorSettings.tabs.analytics')}</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}

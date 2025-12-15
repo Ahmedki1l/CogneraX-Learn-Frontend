@@ -52,7 +52,7 @@ const mockBackups = [
 ];
 
 export function SystemAdministration() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [systemMetrics, setSystemMetrics] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [backups, setBackups] = useState([]);
@@ -221,7 +221,7 @@ export function SystemAdministration() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Error Banner */}
       {error && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -331,10 +331,10 @@ export function SystemAdministration() {
 
       <Tabs defaultValue="monitoring" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="monitoring">System Monitoring</TabsTrigger>
-          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-          <TabsTrigger value="backup">Backup & Recovery</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance</TabsTrigger>
+          <TabsTrigger value="monitoring">{t('sysAdmin.tabs.metrics')}</TabsTrigger>
+          <TabsTrigger value="audit">{t('sysAdmin.tabs.logs')}</TabsTrigger>
+          <TabsTrigger value="backup">{t('sysAdmin.tabs.backups')}</TabsTrigger>
+          <TabsTrigger value="compliance">{t('sysAdmin.tabs.compliance')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="monitoring" className="space-y-6">

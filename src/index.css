@@ -246,7 +246,7 @@
     --color-card-foreground: #0a0a0a;
     --color-popover: #fff;
     --color-popover-foreground: #0a0a0a;
-    --color-primary: #23beae;
+    --color-primary: #09090b;
     --color-primary-foreground: #fafafa;
     --color-secondary: #f2f2f3;
     --color-secondary-foreground: #171717;
@@ -257,11 +257,11 @@
     --color-destructive: #ef4444;
     --color-border: #e3e2e4;
     --color-input: #ebeaec;
-    --color-ring: #23beae;
-    --color-cognerax-teal: #23beae;
-    --color-cognerax-purple: #7023be;
-    --color-cognerax-gradient-start: #23beae;
-    --color-cognerax-gradient-end: #7023be;
+    --color-ring: #09090b;
+    --color-cognerax-teal: #09090b;
+    --color-cognerax-purple: #52525b;
+    --color-cognerax-gradient-start: #09090b;
+    --color-cognerax-gradient-end: #71717a;
   }
 }
 

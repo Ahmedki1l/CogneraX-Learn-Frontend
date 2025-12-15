@@ -24,6 +24,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AICreditsManagement } from './AICreditsManagement';
 import { api } from '../services/api';
 import { toast } from 'sonner';
+import { useAICredits } from './context/AICreditsContext';
 
 interface DashboardProps {
   user?: any;
@@ -46,6 +47,7 @@ export function Dashboard({ user }: DashboardProps) {
   const userStatus = user?.status || 'active';
   const userRole = user?.role || 'admin';
   
+  const { summary: aiSummary } = useAICredits();
   
   // Fetch platform analytics and additional data on mount
   useEffect(() => {
@@ -103,7 +105,7 @@ export function Dashboard({ user }: DashboardProps) {
   const totalCourses = platformAnalytics?.overview?.totalCourses || user?.createdCourses?.length || 0;
   const totalEnrollments = platformAnalytics?.overview?.totalEnrollments || 0;
   const totalCompletedCourses = platformAnalytics?.overview?.totalCompletedCourses || 0;
-  const aiUsage = platformAnalytics?.overview?.aiCreditsUsed || user?.aiCredits?.used || 0;
+  const aiUsage = platformAnalytics?.overview?.aiCreditsUsed || aiSummary?.used || 0;
   const activeUsers = platformAnalytics?.overview?.activeUsers || 0;
   const newUsersThisPeriod = platformAnalytics?.overview?.newUsers || 0;
   

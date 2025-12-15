@@ -20,6 +20,10 @@ export class CourseApiService extends BaseApiService {
     return this.request(`/courses?${params.toString()}`);
   }
 
+  async getAccessibleCourses(instructorId: string): Promise<any> {
+    return this.request(`/instructors/${instructorId}/accessible-courses`);
+  }
+
   async getCourseById(courseId: string): Promise<any> {
     return this.request(`/courses/${courseId}`);
   }

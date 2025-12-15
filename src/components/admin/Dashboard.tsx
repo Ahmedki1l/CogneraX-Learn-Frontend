@@ -24,12 +24,15 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AICreditsManagement } from './AICreditsManagement';
 import { api } from '../../services/api';
 import { toast } from 'sonner';
+import { useAICredits } from '../context/AICreditsContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface DashboardProps {
   user?: any;
 }
 
 export function Dashboard({ user }: DashboardProps) {
+  const { t, isRTL } = useLanguage();
   const [showAICreditsManagement, setShowAICreditsManagement] = useState(false);
   const [platformAnalytics, setPlatformAnalytics] = useState<any>(null);
   const [engagementStats, setEngagementStats] = useState<any>(null);
@@ -46,6 +49,7 @@ export function Dashboard({ user }: DashboardProps) {
   const userStatus = user?.status || 'active';
   const userRole = user?.role || 'admin';
   
+  const { summary: aiSummary } = useAICredits();
   
   // Fetch platform analytics and additional data on mount
   useEffect(() => {
@@ -103,13 +107,13 @@ export function Dashboard({ user }: DashboardProps) {
   const totalCourses = platformAnalytics?.overview?.totalCourses || user?.createdCourses?.length || 0;
   const totalEnrollments = platformAnalytics?.overview?.totalEnrollments || 0;
   const totalCompletedCourses = platformAnalytics?.overview?.totalCompletedCourses || 0;
-  const aiUsage = platformAnalytics?.overview?.aiCreditsUsed || user?.aiCredits?.used || 0;
+  const aiUsage = platformAnalytics?.overview?.aiCreditsUsed || aiSummary?.used || 0;
   const activeUsers = platformAnalytics?.overview?.activeUsers || 0;
   const newUsersThisPeriod = platformAnalytics?.overview?.newUsers || 0;
   
   const stats = [
     {
-      title: 'Total Users',
+      title: t('admin.stats.totalUsers'),
       value: totalUsers > 0 ? totalUsers.toLocaleString() : '0',
       change: platformAnalytics?.overview?.userGrowth ? `+${platformAnalytics.overview.userGrowth}%` : '+0%',
       changeType: 'positive',
@@ -119,7 +123,7 @@ export function Dashboard({ user }: DashboardProps) {
       textColor: 'text-blue-700'
     },
     {
-      title: 'Total Courses',
+      title: t('admin.stats.totalCourses'),
       value: totalCourses > 0 ? totalCourses.toString() : '0',
       change: platformAnalytics?.overview?.courseGrowth ? `+${platformAnalytics.overview.courseGrowth}%` : '+0%',
       changeType: 'positive',
@@ -129,7 +133,7 @@ export function Dashboard({ user }: DashboardProps) {
       textColor: 'text-teal-700'
     },
     {
-      title: 'AI Credits Used',
+      title: t('admin.stats.aiCredits'),
       value: aiUsage > 0 ? aiUsage.toLocaleString() : '0',
       change: platformAnalytics?.overview?.aiUsageGrowth ? `+${platformAnalytics.overview.aiUsageGrowth}%` : '+0%',
       changeType: 'positive',
@@ -139,7 +143,7 @@ export function Dashboard({ user }: DashboardProps) {
       textColor: 'text-purple-700'
     },
     {
-      title: 'Total Enrollments',
+      title: t('admin.stats.enrollments'),
       value: totalEnrollments > 0 ? totalEnrollments.toLocaleString() : '0',
       change: platformAnalytics?.courses?.enrollmentGrowth ? `+${platformAnalytics.courses.enrollmentGrowth}%` : '+0%',
       changeType: 'positive',
@@ -221,36 +225,36 @@ export function Dashboard({ user }: DashboardProps) {
 
   const quickActions = [
     {
-      title: 'Analyze New Content',
-      description: 'Upload and analyze educational content with AI',
+      title: t('admin.actions.analyze'),
+      description: t('admin.actions.analyzeDesc'),
       icon: Brain,
       color: 'from-purple-500 to-purple-600',
       action: () => {}
     },
     {
-      title: 'Create Quiz',
-      description: 'Generate quizzes automatically from content',
+      title: t('admin.actions.quiz'),
+      description: t('admin.actions.quizDesc'),
       icon: FileText,
       color: 'from-teal-500 to-teal-600',
       action: () => {}
     },
     {
-      title: 'Manage AI Credits',
-      description: 'Monitor and distribute AI credits to instructors',
+      title: t('admin.actions.credits'),
+      description: t('admin.actions.creditsDesc'),
       icon: Zap,
       color: 'from-orange-500 to-orange-600',
       action: () => setShowAICreditsManagement(true)
     },
     {
-      title: 'Invite Students',
-      description: 'Send invitation links to new students',
+      title: t('admin.actions.invite'),
+      description: t('admin.actions.inviteDesc'),
       icon: Users,
       color: 'from-blue-500 to-blue-600',
       action: () => {}
     },
     {
-      title: 'Generate Reports',
-      description: 'Create detailed progress and analytics reports',
+      title: t('admin.actions.reports'),
+      description: t('admin.actions.reportsDesc'),
       icon: TrendingUp,
       color: 'from-green-500 to-green-600',
       action: () => {}
@@ -287,7 +291,7 @@ export function Dashboard({ user }: DashboardProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Welcome Banner */}
       <div className="relative overflow-hidden bg-gradient-to-r from-teal-500 via-blue-500 to-purple-600 rounded-2xl p-8 text-white">
         <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent"></div>
@@ -295,12 +299,11 @@ export function Dashboard({ user }: DashboardProps) {
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-3">
               <div className="h-2 w-2 bg-white rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-white/90">Live Dashboard</span>
+              <span className="text-sm font-medium text-white/90">{t('admin.dashboard.live')}</span>
             </div>
-            <h1 className="text-3xl font-bold mb-3">Welcome back, {userName}!</h1>
+            <h1 className="text-3xl font-bold mb-3">{t('admin.dashboard.welcome').replace('{name}', userName)}</h1>
             <p className="text-white/90 text-lg max-w-2xl">
-              Your AI-powered educational platform is performing excellently. 
-              Here's what's happening with your organization today.
+              {t('admin.dashboard.welcomeDesc')}
             </p>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 mt-4">
               <div className="flex items-center space-x-2">
@@ -308,31 +311,31 @@ export function Dashboard({ user }: DashboardProps) {
                 <span className="text-sm font-medium capitalize">{userStatus}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-white/80">Role:</span>
+                <span className="text-sm text-white/80">{t('common.role')}:</span>
                 <span className="text-sm font-medium capitalize">{userRole}</span>
               </div>
               {isEmailVerified ? (
                 <div className="flex items-center space-x-2">
                   <Award className="h-4 w-4 text-green-300" />
-                  <span className="text-sm font-medium">Email Verified</span>
+                  <span className="text-sm font-medium">{t('common.verified')}</span>
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
                   <AlertTriangle className="h-4 w-4 text-orange-300" />
-                  <span className="text-sm font-medium">Email Not Verified</span>
+                  <span className="text-sm font-medium">{t('common.unverified')}</span>
                 </div>
               )}
               <div className="flex items-center space-x-2">
                 <TrendingUp className="h-5 w-5 text-green-300" />
-                <span className="text-sm font-medium">+15% this month</span>
+                <span className="text-sm font-medium">+15% {t('instructor.stats.growth')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="h-5 w-5 text-blue-300" />
-                <span className="text-sm font-medium">{totalUsers > 0 ? `${totalUsers.toLocaleString()} total users` : 'No users yet'}</span>
+                <span className="text-sm font-medium">{totalUsers > 0 ? `${totalUsers.toLocaleString()} ${t('admin.stats.totalUsers').toLowerCase()}` : t('common.loading')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <BookOpen className="h-5 w-5 text-teal-300" />
-                <span className="text-sm font-medium">{totalCourses > 0 ? `${totalCourses} courses` : 'No courses yet'}</span>
+                <span className="text-sm font-medium">{totalCourses > 0 ? `${totalCourses} ${t('admin.stats.totalCourses').toLowerCase()}` : t('common.loading')}</span>
               </div>
             </div>
           </div>
@@ -354,14 +357,14 @@ export function Dashboard({ user }: DashboardProps) {
         <Card className="border-0 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Admin Profile</span>
+              <span>{t('admin.dashboard.profile')}</span>
               {isEmailVerified ? (
                 <Award className="h-5 w-5 text-green-600" />
               ) : (
                 <AlertTriangle className="h-5 w-5 text-orange-600" />
               )}
             </CardTitle>
-            <CardDescription>Your account information and status</CardDescription>
+            <CardDescription>{t('admin.dashboard.accountInfo')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -402,7 +405,7 @@ export function Dashboard({ user }: DashboardProps) {
               <div>
                 <p className="text-sm text-gray-500 mb-1">AI Credits</p>
                 <p className="font-semibold text-gray-900">
-                  {user.aiCredits?.used || 0} / {user.aiCredits?.total || user.organization?.settings?.aiCreditsPool || 0}
+                  {aiSummary?.used ?? 0} / {aiSummary?.total ?? (aiSummary?.used ?? 0) + (aiSummary?.available ?? aiSummary?.remaining ?? 0)}
                 </p>
               </div>
               <div>
@@ -474,16 +477,16 @@ export function Dashboard({ user }: DashboardProps) {
                       )}
                     </div>
                     <p className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</p>
-                    <div className="flex items-center">
-                      <span className={`text-sm font-semibold px-2 py-1 rounded-full ${
-                        stat.changeType === 'positive' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-red-100 text-red-700'
-                      }`}>
-                        {stat.change}
-                      </span>
-                      <span className="text-xs text-gray-500 ml-2">vs last month</span>
-                    </div>
+                      <div className="flex items-center">
+                        <span className={`text-sm font-semibold px-2 py-1 rounded-full ${
+                          stat.changeType === 'positive' 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {stat.change}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-2">{t('instructor.stats.growth')}</span>
+                      </div>
                   </div>
                   <div className="flex flex-col items-end">
                     <div className={`h-14 w-14 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
@@ -503,15 +506,15 @@ export function Dashboard({ user }: DashboardProps) {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
-                Student Growth & Engagement
+                <BarChart3 className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-blue-600`} />
+                {t('admin.charts.studentGrowth')}
               </span>
               <Button variant="outline" size="sm">
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
               </Button>
             </CardTitle>
             <CardDescription>
-              Monthly student enrollment and active participation trends
+              {t('admin.charts.studentGrowthDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -575,11 +578,11 @@ export function Dashboard({ user }: DashboardProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <PieChart className="h-5 w-5 mr-2 text-purple-600" />
-              AI Analysis Quality
+              <PieChart className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-purple-600`} />
+              {t('admin.charts.aiQuality')}
             </CardTitle>
             <CardDescription>
-              Distribution of content analysis scores
+              {t('admin.charts.aiQualityDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -628,11 +631,11 @@ export function Dashboard({ user }: DashboardProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <BookOpen className="h-5 w-5 mr-2 text-teal-600" />
-              Course Completion Rates
+              <BookOpen className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-teal-600`} />
+              {t('admin.charts.completionRates')}
             </CardTitle>
             <CardDescription>
-              Student progress across different courses
+              {t('admin.charts.completionRatesDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -677,11 +680,11 @@ export function Dashboard({ user }: DashboardProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
-              Weekly Engagement Pattern
+              <TrendingUp className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-green-600`} />
+              {t('admin.charts.engagement')}
             </CardTitle>
             <CardDescription>
-              Student activity levels throughout the week
+              {t('admin.charts.engagementDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>

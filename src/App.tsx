@@ -6,6 +6,7 @@ import { Header } from './components/shared/Header';
 import { Settings } from './components/shared/Settings';
 import { Toaster } from './components/ui/sonner';
 import { LanguageProvider } from './components/context/LanguageContext';
+import { AICreditsProvider } from './components/context/AICreditsContext';
 import { CartProvider } from './components/commerce/CartContext';
 import { Cart } from './components/commerce/Cart';
 
@@ -19,6 +20,8 @@ import { SystemAdministration } from './components/admin/SystemAdministration';
 import { PlatformConfiguration } from './components/admin/PlatformConfiguration';
 import { AICreditsManagementPage } from './components/admin/AICreditsManagementPage';
 import { InstructorManagement } from './components/admin/InstructorManagement';
+// NEW - Exam components
+import { ExamManagement as AdminExamManagement } from './components/admin/ExamManagement';
 
 // Instructor components
 import { InstructorDashboard } from './components/instructor/InstructorDashboard';
@@ -27,18 +30,23 @@ import { StudentSubmissions } from './components/instructor/StudentSubmissions';
 import { InstructorAnalytics } from './components/instructor/InstructorAnalytics';
 import { Gradebook } from './components/instructor/Gradebook';
 import { ContentAuthoringTools } from './components/instructor/ContentAuthoringTools';
+// NEW - Exam components
+import { ExamManagement as InstructorExamManagement } from './components/instructor/ExamManagement';
+import { ExamSubmissions } from './components/instructor/ExamSubmissions';
 
 // Student components
 import { StudentDashboard } from './components/student/StudentDashboard';
 import { MyCourses } from './components/student/MyCourses';
 import { CourseDiscovery } from './components/student/CourseDiscovery';
 import { LessonView } from './components/student/LessonView';
-import { QuizResults } from './components/student/QuizResults';
 import { Achievements } from './components/student/Achievements';
-import { QuizTaking } from './components/student/QuizTaking';
 import { StudentAnalytics } from './components/student/StudentAnalytics';
 import { StudyTools } from './components/student/StudyTools';
 import { Certificates } from './components/student/Certificates';
+// NEW - Exam components
+import { ExamSchedule } from './components/student/ExamSchedule';
+import { ExamTaking } from './components/student/ExamTaking';
+import { ExamGrades } from './components/student/ExamGrades';
 
 // Auth components
 import { Login } from './components/auth/Login';
@@ -50,18 +58,24 @@ import { ContentAnalysis } from './components/ai/ContentAnalysis';
 import { AITutoringSystem } from './components/ai/AITutoringSystem';
 import { AIEssayGrading } from './components/ai/AIEssayGrading';
 import { AIRecommendationEngine } from './components/ai/AIRecommendationEngine';
+import { AIQuestionGenerator } from './components/ai/AIQuestionGenerator';
+import { AIExamGenerator } from './components/ai/AIExamGenerator';
 
 // Tools components
-import { QuizCreator } from './components/tools/QuizCreator';
 import { QuestionBank } from './components/tools/QuestionBank';
 
 // Communication components
 import { CommunicationHub } from './components/communication/CommunicationHub';
+import { AssignmentManagement } from './components/instructor/AssignmentManagement';
+import { StudentAssignments } from './components/student/StudentAssignments';
 import { Forums } from './components/communication/Forums';
+
+// Parent components
+import { ParentDashboard, ChildProgressView, AICreditsMonitor } from './components/parent';
 
 // Legacy components (to be moved later)
 import { AICreditsManagement } from './components/admin/AICreditsManagement';
-import exampleImage from './assets/1a0665958bd51afeafab073a021c9a5023632f55.png';
+import exampleImage from './assets/cx-logo.png';
 import { api } from './services/api';
 
 // Debug logger that persists across page refreshes
@@ -112,8 +126,21 @@ export default function App() {
       case 'admin': return '/dashboard';
       case 'instructor': return '/instructor-dashboard';
       case 'student': return '/student-dashboard';
+      case 'parent': return '/parent/dashboard';
       default: return '/dashboard';
     }
+  };
+
+  const RoleGuard: React.FC<{ allowedRoles: string[]; children: React.ReactNode }> = ({
+    allowedRoles,
+    children,
+  }) => {
+    const userRole = currentUser?.role;
+    if (!userRole || !allowedRoles.includes(userRole)) {
+      debugLog('🚫 RoleGuard blocked access', { required: allowedRoles, found: userRole });
+      return <Navigate to={getDefaultRoute(userRole || 'admin')} replace />;
+    }
+    return <>{children}</>;
   };
 
   // Authentication handlers
@@ -236,6 +263,8 @@ export default function App() {
             debugLog('Server response', { hasUserData: !!userData });
             
             if (userData) {
+              // Always use fresh server data and update localStorage
+              localStorage.setItem('user', JSON.stringify(userData));
               setCurrentUser(userData);
               setIsAuthenticated(true);
               setIsLoadingUser(false);
@@ -306,40 +335,40 @@ export default function App() {
 
 
   // Debug panel component
-  const DebugPanel = () => {
-    if (!showDebugPanel) return null;
-    
-    const logs = sessionStorage.getItem('debugLogs') || 'No logs yet...';
-    
-    return (
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        maxHeight: '300px',
-        backgroundColor: '#1a1a1a',
-        color: '#00ff00',
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        padding: '10px',
-        overflowY: 'auto',
-        zIndex: 99999,
-        borderTop: '2px solid #00ff00'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-          <strong>🐛 DEBUG LOGS (Persisted in sessionStorage)</strong>
-          <div>
-            <button onClick={clearDebugLogs} style={{ marginRight: '10px', padding: '2px 8px' }}>Clear</button>
-            <button onClick={() => setShowDebugPanel(false)} style={{ padding: '2px 8px' }}>Hide</button>
-          </div>
-        </div>
-        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-          {logs}
-        </pre>
-      </div>
-    );
-  };
+  // const DebugPanel = () => {
+  //   if (!showDebugPanel) return null;
+  //   
+  //   const logs = sessionStorage.getItem('debugLogs') || 'No logs yet...';
+  //   
+  //   return (
+  //     <div style={{
+  //       position: 'fixed',
+  //       bottom: 0,
+  //       left: 0,
+  //       right: 0,
+  //       maxHeight: '300px',
+  //       backgroundColor: '#1a1a1a',
+  //       color: '#00ff00',
+  //       fontFamily: 'monospace',
+  //       fontSize: '11px',
+  //       padding: '10px',
+  //       overflowY: 'auto',
+  //       zIndex: 99999,
+  //       borderTop: '2px solid #00ff00'
+  //     }}>
+  //       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+  //         <strong>🐛 DEBUG LOGS (Persisted in sessionStorage)</strong>
+  //         <div>
+  //           <button onClick={clearDebugLogs} style={{ marginRight: '10px', padding: '2px 8px' }}>Clear</button>
+  //           <button onClick={() => setShowDebugPanel(false)} style={{ padding: '2px 8px' }}>Hide</button>
+  //         </div>
+  //       </div>
+  //       <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+  //         {logs}
+  //       </pre>
+  //     </div>
+  //   );
+  // };
 
   // Show loading screen while checking authentication
   if (isLoadingUser) {
@@ -429,12 +458,13 @@ export default function App() {
 
   return (
     <LanguageProvider>
-      <CartProvider>
+      <AICreditsProvider user={currentUser}>
+        <CartProvider>
         {/* Debug panel - remove in production */}
-        <DebugPanel />
+        {/* <DebugPanel /> */}
         
         {/* Debug toggle button */}
-        {!showDebugPanel && (
+        {/* {!showDebugPanel && (
           <button
             onClick={() => setShowDebugPanel(true)}
             style={{
@@ -453,7 +483,7 @@ export default function App() {
           >
             🐛 Show Debug Logs
           </button>
-        )}
+        )} */}
         
         {/* Debug: Routes render */}
         <Routes>
@@ -490,15 +520,44 @@ export default function App() {
             <Route path="/instructor-management" element={<InstructorManagement />} />
             <Route path="/system-admin" element={<SystemAdministration />} />
             <Route path="/platform-config" element={<PlatformConfiguration />} />
-            <Route path="/ai-credits" element={<AICreditsManagementPage />} />
+            <Route
+              path="/ai-credits"
+              element={
+                <RoleGuard allowedRoles={['admin']}>
+                  <AICreditsManagementPage />
+                </RoleGuard>
+              }
+            />
             
             {/* Instructor Routes */}
             <Route path="/instructor-dashboard" element={<InstructorDashboard user={currentUser} />} />
             <Route path="/courses" element={<CourseManagement user={currentUser} />} />
+            <Route path="/create-course" element={<CourseManagement user={currentUser} openCreateModal={true} />} />
             <Route path="/gradebook" element={<Gradebook user={currentUser} />} />
             <Route path="/submissions" element={<StudentSubmissions user={currentUser} />} />
             <Route path="/instructor-analytics" element={<InstructorAnalytics user={currentUser} />} />
             <Route path="/content-authoring" element={<ContentAuthoringTools user={currentUser} />} />
+            {/* NEW - Exam Routes */}
+            <Route
+              path="/exams"
+              element={
+                <RoleGuard allowedRoles={['admin', 'instructor']}>
+                  {currentUser?.role === 'admin' ? (
+                    <AdminExamManagement user={currentUser} />
+                  ) : (
+                    <InstructorExamManagement user={currentUser} />
+                  )}
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/exam-submissions"
+              element={
+                <RoleGuard allowedRoles={['instructor', 'admin']}>
+                  <ExamSubmissions user={currentUser} />
+                </RoleGuard>
+              }
+            />
             
             {/* Student Routes */}
             <Route path="/student-dashboard" element={<StudentDashboard user={currentUser} />} />
@@ -506,24 +565,91 @@ export default function App() {
             <Route path="/course-discovery" element={<CourseDiscovery user={currentUser} />} />
             <Route path="/achievements" element={<Achievements user={currentUser} />} />
             <Route path="/certificates" element={<Certificates user={currentUser} />} />
+            <Route path="/assignments" element={
+              <RoleGuard allowedRoles={['instructor']}>
+                <AssignmentManagement user={currentUser} />
+              </RoleGuard>
+            } />
+            <Route path="/my-assignments" element={
+              <RoleGuard allowedRoles={['student']}>
+                <StudentAssignments user={currentUser} />
+              </RoleGuard>
+            } />
             <Route path="/student-analytics" element={<StudentAnalytics user={currentUser} />} />
             <Route path="/study-tools" element={<StudyTools user={currentUser} />} />
+            {/* NEW - Exam Routes */}
+            <Route path="/exam-schedule" element={<ExamSchedule user={currentUser} />} />
+            <Route path="/exam/:id/take" element={<ExamTaking user={currentUser} />} />
+            <Route path="/exam-grades" element={<ExamGrades user={currentUser} />} />
+            
+            {/* Parent Routes */}
+            <Route
+              path="/parent/dashboard"
+              element={
+                <RoleGuard allowedRoles={['parent']}>
+                  <ParentDashboard />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/parent/child/:childId"
+              element={
+                <RoleGuard allowedRoles={['parent']}>
+                  <ChildProgressView />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/parent/child/:childId/ai-credits"
+              element={
+                <RoleGuard allowedRoles={['parent']}>
+                  <AICreditsMonitor />
+                </RoleGuard>
+              }
+            />
             
             {/* Shared Routes */}
             <Route path="/lesson/:id" element={<LessonView />} />
-            <Route path="/quiz/:id" element={<QuizTaking user={currentUser} onComplete={() => {}} onNavigateBack={() => {}} />} />
-            <Route path="/quiz-results/:id" element={<QuizResults user={currentUser} />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/ai-tutoring" element={<AITutoringSystem />} />
-            <Route path="/ai-essay-grading" element={<AIEssayGrading />} />
+            <Route
+              path="/ai-essay-grading"
+              element={
+                <RoleGuard allowedRoles={['admin', 'instructor']}>
+                  <AIEssayGrading />
+                </RoleGuard>
+              }
+            />
             <Route path="/ai-recommendations" element={<AIRecommendationEngine />} />
-            <Route path="/content-analysis" element={<ContentAnalysis />} />
+            <Route
+              path="/content-analysis"
+              element={
+                <RoleGuard allowedRoles={['admin', 'instructor']}>
+                  <ContentAnalysis />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/ai-question-generator"
+              element={
+                <RoleGuard allowedRoles={['admin', 'instructor']}>
+                  <AIQuestionGenerator />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/ai-exam-generator"
+              element={
+                <RoleGuard allowedRoles={['admin', 'instructor']}>
+                  <AIExamGenerator />
+                </RoleGuard>
+              }
+            />
             <Route path="/communication" element={<CommunicationHub user={currentUser} />} />
             <Route path="/forums" element={<Forums user={currentUser} />} />
             <Route path="/cart" element={<Cart user={currentUser} />} />
             
             {/* Tools Routes */}
-            <Route path="/quiz-creator" element={<QuizCreator user={currentUser} />} />
             <Route path="/question-bank" element={<QuestionBank />} />
             
             {/* Legacy Routes - Commented out as it requires props */}
@@ -537,7 +663,8 @@ export default function App() {
           {/* <Route path="*" element={<Navigate to="/login" replace />} /> */}
         </Routes>
         <Toaster />
-    </CartProvider>
+        </CartProvider>
+      </AICreditsProvider>
     </LanguageProvider>
   );
 }

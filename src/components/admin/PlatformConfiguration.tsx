@@ -46,7 +46,7 @@ const brandingOptions = {
 };
 
 export function PlatformConfiguration() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [featureFlags, setFeatureFlags] = useState<any[]>([]);
   const [brandingSettings, setBrandingSettings] = useState<any>(brandingOptions);
@@ -215,7 +215,7 @@ export function PlatformConfiguration() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Error Banner */}
       {error && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -239,15 +239,15 @@ export function PlatformConfiguration() {
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            Export Config
+            {t('platformConfig.exportConfig')}
           </Button>
           <Button variant="outline" size="sm">
             <Upload className="h-4 w-4 mr-2" />
-            Import Config
+            {t('platformConfig.importConfig')}
           </Button>
           <Button size="sm">
             <Save className="h-4 w-4 mr-2" />
-            Save All Changes
+            {t('platformConfig.saveAllChanges')}
           </Button>
         </div>
       </div>
@@ -258,7 +258,7 @@ export function PlatformConfiguration() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Features</p>
+                <p className="text-sm font-medium text-gray-600">{t('platformConfig.activeFeatures')}</p>
                 <p className="text-2xl font-bold">{featureFlags.filter(f => f.enabled).length}</p>
               </div>
               <Zap className="h-8 w-8 text-yellow-600" />
@@ -269,7 +269,7 @@ export function PlatformConfiguration() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Integrations</p>
+                <p className="text-sm font-medium text-gray-600">{t('platformConfig.integrations')}</p>
                 <p className="text-2xl font-bold">{(integrations.length > 0 ? integrations : mockIntegrations).filter(i => i.status === 'connected').length}</p>
               </div>
               <Plug className="h-8 w-8 text-blue-600" />
@@ -280,7 +280,7 @@ export function PlatformConfiguration() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">White Label</p>
+                <p className="text-sm font-medium text-gray-600">{t('platformConfig.whiteLabel')}</p>
                 <p className="text-2xl font-bold">{brandingSettings.hideDefaultBranding ? 'ON' : 'OFF'}</p>
               </div>
               <Palette className="h-8 w-8 text-purple-600" />
@@ -291,7 +291,7 @@ export function PlatformConfiguration() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Languages</p>
+                <p className="text-sm font-medium text-gray-600">{t('platformConfig.languages')}</p>
                 <p className="text-2xl font-bold">2</p>
               </div>
               <Globe className="h-8 w-8 text-green-600" />
@@ -302,10 +302,10 @@ export function PlatformConfiguration() {
 
       <Tabs defaultValue="features" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="features">Feature Flags</TabsTrigger>
-          <TabsTrigger value="branding">White Labeling</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="general">General Settings</TabsTrigger>
+          <TabsTrigger value="features">{t('platformConfig.featureFlags')}</TabsTrigger>
+          <TabsTrigger value="branding">{t('platformConfig.whiteLabeling')}</TabsTrigger>
+          <TabsTrigger value="integrations">{t('platformConfig.integrationsTab')}</TabsTrigger>
+          <TabsTrigger value="general">{t('platformConfig.generalSettings')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="features" className="space-y-6">

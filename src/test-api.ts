@@ -131,8 +131,8 @@ export async function testAPIServices() {
         results.payment = true;
       }
       
-      if (typeof api.payment.enrollFreeCourse === 'function') {
-        console.log('✅ Payment.enrollFreeCourse method exists');
+      if (typeof api.payment.purchaseCourse === 'function') {
+        console.log('✅ Payment.purchaseCourse method exists');
       }
     } catch (error) {
       console.log('❌ Payment service test failed:', error);
@@ -234,8 +234,8 @@ export async function testNewServices() {
     }
 
     // Test Forum Service
-    if (typeof api.forum?.getPosts === 'function') {
-      console.log('✅ Forum.getPosts method exists');
+    if (typeof api.forum?.getForums === 'function') {
+      console.log('✅ Forum.getForums method exists');
       newServices.forum = true;
     }
 

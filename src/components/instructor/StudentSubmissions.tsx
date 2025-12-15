@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Assignment {
   id: string;
@@ -60,6 +61,7 @@ export function StudentSubmissions({ user }: StudentSubmissionsProps) {
   const [loading, setLoading] = useState(false);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [scheduledEvents, setScheduledEvents] = useState<ScheduledEvent[]>([]);
+  const { t, isRTL } = useLanguage();
 
   // Fetch assignments and submissions from API
   React.useEffect(() => {
@@ -216,7 +218,7 @@ export function StudentSubmissions({ user }: StudentSubmissionsProps) {
     .slice(0, 3);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

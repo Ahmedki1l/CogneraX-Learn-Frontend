@@ -54,6 +54,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { toast } from "sonner";
 import { api } from '../../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 interface OrganizationProps {
   onNavigateToLesson?: (lesson: any) => void;
@@ -130,6 +131,7 @@ interface Lesson {
 }
 
 export function Organization({ onNavigateToLesson }: OrganizationProps = {}) {
+  const { t, isRTL } = useLanguage();
   const [copiedLink, setCopiedLink] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeView, setActiveView] = useState('overview');
@@ -546,11 +548,11 @@ export function Organization({ onNavigateToLesson }: OrganizationProps = {}) {
         <div className="flex items-center space-x-3">
           <Button variant="outline">
             <Settings className="h-4 w-4 mr-2" />
-            Organization Settings
+            {t('organization.settings')}
           </Button>
           <Button className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700">
             <UserPlus className="h-4 w-4 mr-2" />
-            Invite Members
+            {t('organization.inviteMembers')}
           </Button>
         </div>
       </div>
@@ -561,7 +563,7 @@ export function Organization({ onNavigateToLesson }: OrganizationProps = {}) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600 mb-1">Total Members</p>
+                <p className="text-sm font-medium text-blue-600 mb-1">{t('organization.totalMembers')}</p>
                 <p className="text-3xl font-bold text-blue-900">{orgData.members.toLocaleString()}</p>
                 <div className="flex items-center mt-2">
                   <ArrowUpRight className="h-4 w-4 text-green-600 mr-1" />
@@ -579,7 +581,7 @@ export function Organization({ onNavigateToLesson }: OrganizationProps = {}) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600 mb-1">Fields of Study</p>
+                <p className="text-sm font-medium text-green-600 mb-1">{t('organization.fieldsOfStudy')}</p>
                 <p className="text-3xl font-bold text-green-900">{fieldsOfStudy.length}</p>
                 <div className="flex items-center mt-2">
                   <GraduationCap className="h-4 w-4 text-green-500 mr-1" />
@@ -1530,7 +1532,7 @@ export function Organization({ onNavigateToLesson }: OrganizationProps = {}) {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" dir={isRTL ? 'rtl' : 'ltr'}>
       {activeView === 'overview' && renderOverview()}
       {activeView === 'field-details' && renderFieldDetails()}
       {activeView === 'field-courses' && renderFieldCourses()}

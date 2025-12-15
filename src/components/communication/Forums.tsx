@@ -83,7 +83,7 @@ interface StudyGroup {
 }
 
 export const Forums: React.FC<ForumsProps> = ({ user }) => {
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('discussions');
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -512,7 +512,7 @@ export const Forums: React.FC<ForumsProps> = ({ user }) => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>

@@ -53,6 +53,7 @@ import { api } from '../../services/api';
 import { toast } from 'sonner';
 import { PdfViewer } from '../shared/PdfViewer';
 import { CustomVideoPlayer } from '../shared/CustomVideoPlayer';
+import { useLanguage } from '../context/LanguageContext';
 
 // Utility function to fix URLs with wrong port
 const fixBackendUrl = (url: string): string => {
@@ -87,6 +88,7 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
   // Get lessonId from URL params if not provided as prop (when used as a route)
   const { id: urlLessonId } = useParams<{ id?: string }>();
   const lessonId = propLessonId || urlLessonId;
+  const { t, isRTL } = useLanguage();
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -241,7 +243,7 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
           console.warn('⚠️ Lesson endpoint not implemented yet');
           setLesson(null);
         } else {
-          toast.error('Failed to load lesson data');
+          toast.error(t('lessonView.failedLoad'));
           setLesson(null);
         }
       } finally {
@@ -290,7 +292,7 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
       
       if (response && response.success) {
         setLessonCompleted(true);
-        toast.success('Lesson marked as complete! 🎉');
+        toast.success(t('lessonView.markedComplete'));
         
         // Track analytics
         try {
@@ -304,7 +306,7 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
         }
       } else {
         console.warn('⚠️ Lesson completion failed or invalid response');
-        toast.error('Failed to mark lesson complete');
+        toast.error(t('lessonView.failedComplete'));
       }
     } catch (error: any) {
       console.error('Failed to mark lesson complete:', error);
@@ -313,7 +315,7 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
       if (error.status === 401 || error.status === 404) {
         console.warn('⚠️ Lesson completion endpoint not implemented yet');
         setLessonCompleted(true);
-        toast.info('Lesson completion feature coming soon');
+        toast.info(t('lessonView.comingSoon'));
       } else {
         toast.error('Failed to mark lesson complete');
       }
@@ -333,14 +335,14 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading lesson...</p>
+          <p className="text-gray-600">{t('lessonView.loading')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Lesson Navigation Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -352,21 +354,21 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                 onClick={onNavigateBack}
                 className="flex items-center hover:bg-gray-50"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Course
+                <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                {t('lessonView.backToCourse')}
               </Button>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="bg-blue-50 text-blue-700">
                   {lesson.course || 'Course'}
                 </Badge>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-600">Lesson {lesson.order || 1}</span>
+                <span className="text-sm text-gray-600">{t('lessonView.lesson')} {lesson.order || 1}</span>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
+                <Settings className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                {t('lessonView.settings')}
               </Button>
               <Button 
                 variant="outline" 
@@ -403,8 +405,8 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                 <div className="h-20 w-20 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
                   <Play className="h-8 w-8 text-white/60" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">No Video Yet</h3>
-                <p className="text-white/70">This lesson doesn't have a video uploaded yet.</p>
+                <h3 className="text-xl font-semibold mb-2">{t('lessonView.noVideoYet')}</h3>
+                <p className="text-white/70">{t('lessonView.noVideoDesc')}</p>
               </div>
             )}
           </div>
@@ -442,11 +444,11 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                     </div>
                     <div className="flex items-center space-x-1">
                       <Eye className="h-4 w-4" />
-                      <span>{(lesson.views || 0).toLocaleString()} views</span>
+                      <span>{(lesson.views || 0).toLocaleString()} {t('lessonView.views')}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4" />
-                      <span>Updated {lesson.lastUpdated ? new Date(lesson.lastUpdated).toLocaleDateString() : 'Recently'}</span>
+                      <span>{t('lessonView.updated')} {lesson.lastUpdated ? new Date(lesson.lastUpdated).toLocaleDateString() : 'Recently'}</span>
                     </div>
                   </div>
                 </div>
@@ -458,16 +460,16 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                     className="flex items-center space-x-2"
                   >
                     {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-                    <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+                    <span>{isBookmarked ? t('lessonView.bookmarked') : t('lessonView.bookmark')}</span>
                   </Button>
                   
                   <Button variant="outline">
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share
+                    <Share2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                    {t('lessonView.share')}
                   </Button>
                   
                   <Button variant="outline">
-                    <ThumbsUp className="h-4 w-4 mr-2" />
+                    <ThumbsUp className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                     {lesson.likes || 0}
                   </Button>
                 </div>
@@ -498,15 +500,15 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                         </div>
                       </div>
                       <Button variant="outline">
-                        <User className="h-4 w-4 mr-2" />
-                        View Profile
+                        <User className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                        {t('lessonView.viewProfile')}
                       </Button>
                     </div>
                   ) : (
                     <div className="text-center py-8">
                       <User className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Instructor Assigned</h3>
-                      <p className="text-gray-500">This lesson doesn't have an instructor assigned yet.</p>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">{t('lessonView.noInstructor')}</h3>
+                      <p className="text-gray-500">{t('lessonView.noInstructorDesc')}</p>
                     </div>
                   )}
                 </CardContent>
@@ -516,11 +518,11 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
             {/* Lesson Content Tabs */}
             <Tabs defaultValue="overview" className="space-y-6">
               <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="resources">Resources</TabsTrigger>
-                <TabsTrigger value="notes">Notes</TabsTrigger>
-                <TabsTrigger value="discussion">Discussion</TabsTrigger>
-                <TabsTrigger value="transcript">Transcript</TabsTrigger>
+                <TabsTrigger value="overview">{t('lessonView.overview')}</TabsTrigger>
+                <TabsTrigger value="resources">{t('lessonView.resources')}</TabsTrigger>
+                <TabsTrigger value="notes">{t('lessonView.notes')}</TabsTrigger>
+                <TabsTrigger value="discussion">{t('lessonView.discussion')}</TabsTrigger>
+                <TabsTrigger value="transcript">{t('lessonView.transcript')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
@@ -528,10 +530,10 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <Target className="h-5 w-5 mr-2 text-green-600" />
-                      Learning Objectives
+                      <Target className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-green-600`} />
+                      {t('lessonView.learningObjectives')}
                     </CardTitle>
-                    <CardDescription>What you'll learn in this lesson</CardDescription>
+                    <CardDescription>{t('lessonView.whatYouLearn')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -550,7 +552,7 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                 {/* Tags */}
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
-                    <CardTitle>Topics Covered</CardTitle>
+                    <CardTitle>{t('lessonView.topicsCovered')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
@@ -568,10 +570,10 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <FileText className="h-5 w-5 mr-2 text-blue-600" />
-                      Lesson Resources
+                      <FileText className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-blue-600`} />
+                      {t('lessonView.lessonResources')}
                     </CardTitle>
-                    <CardDescription>Additional materials to enhance your learning</CardDescription>
+                    <CardDescription>{t('lessonView.additionalMaterials')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -598,8 +600,8 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                                 onClick={() => handleOpenPdfViewer(resource)}
                                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                               >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View
+                                <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                                {t('lessonView.view')}
                               </Button>
                             )}
                             <Button 
@@ -614,8 +616,8 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                               }}
                               className="text-green-600 hover:text-green-700 hover:bg-green-50"
                             >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
+                              <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                              {t('lessonView.download')}
                             </Button>
                           </div>
                         </div>
@@ -629,15 +631,15 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <PenTool className="h-5 w-5 mr-2 text-purple-600" />
-                      My Notes
+                      <PenTool className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-purple-600`} />
+                      {t('lessonView.myNotes')}
                     </CardTitle>
-                    <CardDescription>Take notes while you learn</CardDescription>
+                    <CardDescription>{t('lessonView.takeNotes')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <Textarea
-                        placeholder="Write your notes here..."
+                        placeholder={t('lessonView.writeNotes')}
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         className="min-h-[300px] resize-none"
@@ -645,10 +647,10 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2 text-sm text-gray-500">
                           <Lightbulb className="h-4 w-4" />
-                          <span>Auto-saved</span>
+                          <span>{t('lessonView.autoSaved')}</span>
                         </div>
                         <Button className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700">
-                          Save Notes
+                          {t('lessonView.saveNotes')}
                         </Button>
                       </div>
                     </div>
@@ -660,22 +662,22 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <MessageCircle className="h-5 w-5 mr-2 text-green-600" />
-                      Discussion
+                      <MessageCircle className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-green-600`} />
+                      {t('lessonView.discussion')}
                     </CardTitle>
-                    <CardDescription>Join the conversation with fellow learners</CardDescription>
+                    <CardDescription>{t('lessonView.joinConversation')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
                       {/* Add Comment */}
                       <div className="space-y-3">
                         <Textarea
-                          placeholder="Ask a question or share your thoughts..."
+                          placeholder={t('lessonView.askQuestion')}
                           className="resize-none"
                         />
-                        <div className="flex justify-end">
+                        <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'}`}>
                           <Button className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700">
-                            Post Comment
+                            {t('lessonView.postComment')}
                           </Button>
                         </div>
                       </div>
@@ -705,7 +707,7 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                                     <span>{comment.likes}</span>
                                   </button>
                                   <button className="text-gray-500 hover:text-teal-600">
-                                    Reply ({comment.replies})
+                                    {t('lessonView.reply')} ({comment.replies})
                                   </button>
                                   <button className="text-gray-500 hover:text-red-600">
                                     <Flag className="h-4 w-4" />
@@ -725,10 +727,10 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <FileText className="h-5 w-5 mr-2 text-gray-600" />
-                      Video Transcript
+                      <FileText className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-gray-600`} />
+                      {t('lessonView.videoTranscript')}
                     </CardTitle>
-                    <CardDescription>Full text transcript of the lesson</CardDescription>
+                    <CardDescription>{t('lessonView.fullTranscript')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -754,15 +756,15 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900">Lesson Progress</h3>
+                    <h3 className="font-semibold text-gray-900">{t('lessonView.lessonProgress')}</h3>
                     <Badge variant="outline" className="bg-green-100 text-green-800">
                       {Math.round(progressPercentage)}%
                     </Badge>
                   </div>
                   <Progress value={progressPercentage} className="h-3" />
                   <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>{formatTime(currentTime)} watched</span>
-                    <span>{lesson.video?.duration ? formatTime(lesson.video.duration) : lesson.estimatedTime ? `${lesson.estimatedTime} min` : 'N/A'} total</span>
+                    <span>{formatTime(currentTime)} {t('lessonView.watched')}</span>
+                    <span>{lesson.video?.duration ? formatTime(lesson.video.duration) : lesson.estimatedTime ? `${lesson.estimatedTime} min` : 'N/A'} {t('lessonView.total')}</span>
                   </div>
                   <Button 
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
@@ -770,13 +772,13 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
                   >
                     {lessonCompleted ? (
                       <>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Completed
+                        <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                        {t('lessonView.completed')}
                       </>
                     ) : (
                       <>
-                        <Circle className="h-4 w-4 mr-2" />
-                        Mark as Complete
+                        <Circle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                        {t('lessonView.markComplete')}
                       </>
                     )}
                   </Button>
@@ -787,30 +789,30 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
             {/* Navigation */}
             <Card className="border-0 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg">Lesson Navigation</CardTitle>
+                <CardTitle className="text-lg">{t('lessonView.lessonNavigation')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {lesson.previousLesson ? (
                   <Button variant="outline" className="w-full justify-start">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Previous: {lesson.previousLesson.title}
+                    <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                    {t('lessonView.previous')} {lesson.previousLesson.title}
                   </Button>
                 ) : (
                   <div className="w-full p-3 text-center text-gray-500 bg-gray-50 rounded-lg">
                     <ArrowLeft className="h-4 w-4 mx-auto mb-1" />
-                    <span className="text-sm">No previous lesson</span>
+                    <span className="text-sm">{t('lessonView.noPrevious')}</span>
                   </div>
                 )}
                 
                 {lesson.nextLesson ? (
                   <Button variant="outline" className="w-full justify-start">
-                    <ArrowRight className="h-4 w-4 mr-2" />
-                    Next: {lesson.nextLesson.title}
+                    <ArrowRight className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                    {t('lessonView.next')} {lesson.nextLesson.title}
                   </Button>
                 ) : (
                   <div className="w-full p-3 text-center text-gray-500 bg-gray-50 rounded-lg">
                     <ArrowRight className="h-4 w-4 mx-auto mb-1" />
-                    <span className="text-sm">End of course</span>
+                    <span className="text-sm">{t('lessonView.noNext')}</span>
                   </div>
                 )}
               </CardContent>
@@ -819,34 +821,34 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
             {/* Course Stats */}
             <Card className="border-0 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg">Lesson Stats</CardTitle>
+                <CardTitle className="text-lg">{t('lessonView.lessonStats')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
                     <TrendingUp className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-gray-600">Completion Rate</span>
+                    <span className="text-sm text-gray-600">{t('lessonView.completionRate')}</span>
                   </div>
                   <span className="font-semibold">{lesson.completionRate || 0}%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
                     <Eye className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-gray-600">Total Views</span>
+                    <span className="text-sm text-gray-600">{t('lessonView.totalViews')}</span>
                   </div>
                   <span className="font-semibold">{(lesson.views || 0).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
                     <ThumbsUp className="h-4 w-4 text-purple-600" />
-                    <span className="text-sm text-gray-600">Likes</span>
+                    <span className="text-sm text-gray-600">{t('lessonView.likes')}</span>
                   </div>
                   <span className="font-semibold">{lesson.likes || 0}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
                     <Clock className="h-4 w-4 text-orange-600" />
-                    <span className="text-sm text-gray-600">Est. Time</span>
+                    <span className="text-sm text-gray-600">{t('lessonView.estTime')}</span>
                   </div>
                   <span className="font-semibold">{lesson.estimatedTime || 'N/A'}</span>
                 </div>
@@ -856,20 +858,20 @@ export function LessonView({ onNavigateBack, lessonData, lessonId: propLessonId,
             {/* Quick Actions */}
             <Card className="border-0 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
+                <CardTitle className="text-lg">{t('lessonView.quickActions')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button variant="outline" className="w-full justify-start">
-                  <HelpCircle className="h-4 w-4 mr-2" />
-                  Take Quiz
+                  <HelpCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {t('lessonView.takeQuiz')}
                 </Button>
                 <Button variant="outline" className="w-full justify-start">
-                  <Award className="h-4 w-4 mr-2" />
-                  View Certificate
+                  <Award className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {t('lessonView.viewCertificate')}
                 </Button>
                 <Button variant="outline" className="w-full justify-start">
-                  <Zap className="h-4 w-4 mr-2" />
-                  AI Summary
+                  <Zap className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {t('lessonView.aiSummary')}
                 </Button>
               </CardContent>
             </Card>

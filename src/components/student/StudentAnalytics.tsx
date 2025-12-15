@@ -22,7 +22,7 @@ interface StudentAnalyticsProps {
 }
 
 export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [selectedTimeframe, setSelectedTimeframe] = useState('week');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -197,7 +197,7 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading analytics...</p>
+          <p className="text-gray-600">{t('Loading analytics...')}</p>
         </div>
       </div>
     );
@@ -207,21 +207,21 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
     return (
       <div className="text-center py-12">
         <div className="text-red-400 mx-auto mb-4">⚠️</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Analytics</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('Error Loading Analytics')}</h3>
         <p className="text-gray-500 mb-4">{error}</p>
         <Button onClick={() => window.location.reload()}>
-          Try Again
+          {t('Try Again')}
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-cognerax-gradient bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold text-gray-900">
             {t('Learning Analytics')}
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -254,9 +254,9 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
               </div>
               <Clock className="h-8 w-8 text-cognerax-teal" />
             </div>
-            <div className="flex items-center mt-2 text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +2.5h this week
+            <div className="flex items-center mt-2 text-xs text-green-600 rtl:flex-row-reverse">
+              <TrendingUp className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+              {t('+2.5h this week')}
             </div>
           </CardContent>
         </Card>
@@ -270,9 +270,9 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
               </div>
               <Target className="h-8 w-8 text-cognerax-purple" />
             </div>
-            <div className="flex items-center mt-2 text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +3.2% improvement
+            <div className="flex items-center mt-2 text-xs text-green-600 rtl:flex-row-reverse">
+              <TrendingUp className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+              {t('+3.2% improvement')}
             </div>
           </CardContent>
         </Card>
@@ -286,9 +286,9 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
               </div>
               <Flame className="h-8 w-8 text-orange-500" />
             </div>
-            <div className="flex items-center mt-2 text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              Personal best!
+            <div className="flex items-center mt-2 text-xs text-green-600 rtl:flex-row-reverse">
+              <TrendingUp className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+              {t('Personal best!')}
             </div>
           </CardContent>
         </Card>
@@ -302,9 +302,9 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
               </div>
               <Trophy className="h-8 w-8 text-yellow-500" />
             </div>
-            <div className="flex items-center mt-2 text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +2 this week
+            <div className="flex items-center mt-2 text-xs text-green-600 rtl:flex-row-reverse">
+              <TrendingUp className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+              {t('+2 this week')}
             </div>
           </CardContent>
         </Card>
@@ -323,7 +323,7 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
             {/* Weekly Learning Hours */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 rtl:flex-row-reverse">
                   <ChartBar className="h-5 w-5 text-cognerax-teal" />
                   {t('Weekly Learning Hours')}
                 </CardTitle>
@@ -347,7 +347,7 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
             {/* Quiz Performance Trend */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 rtl:flex-row-reverse">
                   <Brain className="h-5 w-5 text-cognerax-purple" />
                   {t('Quiz Performance Trend')}
                 </CardTitle>
@@ -385,17 +385,17 @@ export const StudentAnalytics: React.FC<StudentAnalyticsProps> = ({ user }) => {
                   { name: 'Machine Learning Fundamentals', progress: 32, lessons: 15, total: 47 },
                   { name: 'Mobile App Development', progress: 89, lessons: 34, total: 38 }
                 ].map((course, index) => (
-                  <div key={index} className="space-y-2">
+                  <div key={index} className="space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
                     <div className="flex justify-between items-center">
-                      <h4 className="font-medium">{course.name}</h4>
-                      <span className="text-sm text-muted-foreground">
-                        {course.lessons}/{course.total} lessons
+                      <h4 className={`font-medium ${isRTL ? 'text-right' : 'text-left'}`}>{course.name}</h4>
+                      <span className={`text-sm text-muted-foreground ${isRTL ? 'text-left' : 'text-right'}`}>
+                        {course.lessons}/{course.total} {t('lessons')}
                       </span>
                     </div>
                     <Progress value={course.progress} className="h-2" />
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{course.progress}% complete</span>
-                      <span>{course.total - course.lessons} lessons remaining</span>
+                      <span>{course.progress}% {t('complete')}</span>
+                      <span>{course.total - course.lessons} {t('lessons remaining')}</span>
                     </div>
                   </div>
                 ))}

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -45,6 +46,7 @@ export function Settings({ user, onLogout }: SettingsProps = {}) {
   }
 
   // Default admin settings (existing component)
+  const { t, isRTL } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -202,34 +204,34 @@ export function Settings({ user, onLogout }: SettingsProps = {}) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
           <p className="text-gray-600 mt-1">
-            Manage your account preferences and system configuration
+            {t('settings.subtitle')}
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <SettingsIcon className="h-6 w-6 text-gray-600" />
+          <SettingsIcon className={`h-6 w-6 text-gray-600 ${isRTL ? 'transform scale-x-[-1]' : ''}`} />
         </div>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="data">Data & Privacy</TabsTrigger>
+          <TabsTrigger value="profile">{t('settings.tabs.profile')}</TabsTrigger>
+          <TabsTrigger value="notifications">{t('settings.tabs.notifications')}</TabsTrigger>
+          <TabsTrigger value="security">{t('settings.tabs.security')}</TabsTrigger>
+          <TabsTrigger value="appearance">{t('settings.tabs.appearance')}</TabsTrigger>
+          <TabsTrigger value="data">{t('settings.tabs.data')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2 text-blue-600" />
-                Profile Information
+                <User className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-blue-600`} />
+                {t('settings.profile.title')}
               </CardTitle>
               <CardDescription>
-                Update your personal information and profile settings
+                {t('settings.profile.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -243,11 +245,11 @@ export function Settings({ user, onLogout }: SettingsProps = {}) {
                 <div className="space-y-2">
                   <Button variant="outline" onClick={handleChangePhoto}>
                     <Upload className="h-4 w-4 mr-2" />
-                    Change Photo
+                    {t('settings.changePhoto')}
                   </Button>
                   <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={handleRemovePhoto}>
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Remove Photo
+                    {t('settings.removePhoto')}
                   </Button>
                 </div>
               </div>
@@ -255,13 +257,13 @@ export function Settings({ user, onLogout }: SettingsProps = {}) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    First Name
+                    {t('settings.firstName')}
                   </label>
                   <Input defaultValue="Admin" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Name
+                    {t('settings.lastName')}
                   </label>
                   <Input defaultValue="User" />
                 </div>
@@ -355,11 +357,11 @@ export function Settings({ user, onLogout }: SettingsProps = {}) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Bell className="h-5 w-5 mr-2 text-yellow-600" />
-                Notification Preferences
+                <Bell className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-yellow-600`} />
+                {t('settings.notifications.title')}
               </CardTitle>
               <CardDescription>
-                Choose how you want to be notified about important events
+                {t('settings.notifications.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -506,11 +508,11 @@ export function Settings({ user, onLogout }: SettingsProps = {}) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Shield className="h-5 w-5 mr-2 text-red-600" />
-                Security Settings
+                <Shield className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-red-600`} />
+                {t('settings.security.title')}
               </CardTitle>
               <CardDescription>
-                Manage your account security and authentication
+                {t('settings.security.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -630,11 +632,11 @@ export function Settings({ user, onLogout }: SettingsProps = {}) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Palette className="h-5 w-5 mr-2 text-purple-600" />
-                Appearance & Display
+                <Palette className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-purple-600`} />
+                {t('settings.appearance.title')}
               </CardTitle>
               <CardDescription>
-                Customize how CogneraX Learn looks and feels
+                {t('settings.appearance.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -767,11 +769,11 @@ export function Settings({ user, onLogout }: SettingsProps = {}) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Database className="h-5 w-5 mr-2 text-green-600" />
-                Data & Privacy
+                <Database className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-green-600`} />
+                {t('settings.data.title')}
               </CardTitle>
               <CardDescription>
-                Manage your data, privacy settings, and account deletion
+                {t('settings.data.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

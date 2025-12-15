@@ -78,7 +78,7 @@ async function testAPIServices() {
     ];
 
     for (const service of services) {
-      if (!api[service]) {
+      if (!(api as any)[service]) {
         console.log(`❌ Missing service: ${service}`);
         return false;
       }
@@ -98,7 +98,7 @@ async function testAPIServices() {
 
     for (const method of keyMethods) {
       const parts = method.split('.');
-      let current = api;
+      let current = api as any;
       for (const part of parts) {
         if (!current[part]) {
           console.log(`❌ Missing method: ${method}`);
@@ -134,7 +134,7 @@ async function testComponentImports() {
         await import(component);
         console.log(`✅ ${component} imported successfully`);
       } catch (error) {
-        console.log(`❌ Failed to import ${component}:`, error.message);
+        console.log(`❌ Failed to import ${component}:`, (error as any).message);
         return false;
       }
     }
@@ -152,7 +152,7 @@ async function testComponentImports() {
         await import(component);
         console.log(`✅ ${component} imported successfully`);
       } catch (error) {
-        console.log(`❌ Failed to import ${component}:`, error.message);
+        console.log(`❌ Failed to import ${component}:`, (error as any).message);
         return false;
       }
     }
@@ -170,7 +170,7 @@ async function testComponentImports() {
         await import(component);
         console.log(`✅ ${component} imported successfully`);
       } catch (error) {
-        console.log(`❌ Failed to import ${component}:`, error.message);
+        console.log(`❌ Failed to import ${component}:`, (error as any).message);
         return false;
       }
     }
@@ -188,7 +188,7 @@ async function testComponentImports() {
         await import(component);
         console.log(`✅ ${component} imported successfully`);
       } catch (error) {
-        console.log(`❌ Failed to import ${component}:`, error.message);
+        console.log(`❌ Failed to import ${component}:`, (error as any).message);
         return false;
       }
     }
@@ -211,10 +211,10 @@ async function testDataFlow() {
       await api.analytics.getPlatformAnalytics('7d');
       console.log('✅ Analytics API call structure is correct');
     } catch (error) {
-      if (error.message.includes('fetch') || error.message.includes('network')) {
+      if ((error as any).message.includes('fetch') || (error as any).message.includes('network')) {
         console.log('✅ Analytics API call structure is correct (network error expected)');
       } else {
-        console.log('❌ Analytics API call failed:', error.message);
+        console.log('❌ Analytics API call failed:', (error as any).message);
         return false;
       }
     }
@@ -224,10 +224,10 @@ async function testDataFlow() {
       await api.course.getCourses({});
       console.log('✅ Course API call structure is correct');
     } catch (error) {
-      if (error.message.includes('fetch') || error.message.includes('network')) {
+      if ((error as any).message.includes('fetch') || (error as any).message.includes('network')) {
         console.log('✅ Course API call structure is correct (network error expected)');
       } else {
-        console.log('❌ Course API call failed:', error.message);
+        console.log('❌ Course API call failed:', (error as any).message);
         return false;
       }
     }
@@ -237,10 +237,10 @@ async function testDataFlow() {
       await api.auth.getMe();
       console.log('✅ Auth API call structure is correct');
     } catch (error) {
-      if (error.message.includes('fetch') || error.message.includes('network')) {
+      if ((error as any).message.includes('fetch') || (error as any).message.includes('network')) {
         console.log('✅ Auth API call structure is correct (network error expected)');
       } else {
-        console.log('❌ Auth API call failed:', error.message);
+        console.log('❌ Auth API call failed:', (error as any).message);
         return false;
       }
     }
@@ -266,7 +266,7 @@ async function testErrorHandling() {
     }
 
     try {
-      await api.course.getCourses({ invalid: 'test' });
+      await api.course.getCourses({ invalid: 'test' } as any);
       console.log('✅ Error handling for invalid filters works');
     } catch (error) {
       console.log('✅ Error handling for invalid filters works (error caught)');
@@ -300,7 +300,7 @@ async function testUserFlows() {
         await import(component);
         console.log(`✅ User flow component ${component} is available`);
       } catch (error) {
-        console.log(`❌ User flow component ${component} failed:`, error.message);
+        console.log(`❌ User flow component ${component} failed:`, (error as any).message);
         return false;
       }
     }

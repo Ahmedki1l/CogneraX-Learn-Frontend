@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../../services/api';
+import { useAICredits } from '../context/AICreditsContext';
 import { toast } from 'sonner';
 
 interface AIRecommendationEngineProps {
@@ -37,6 +38,7 @@ interface AIRecommendationEngineProps {
 }
 
 export function AIRecommendationEngine({ user }: AIRecommendationEngineProps) {
+  const { refresh: refreshAICredits } = useAICredits();
   const { t, isRTL } = useLanguage();
   const [recommendations, setRecommendations] = useState([]);
   const [learningPath, setLearningPath] = useState([]);
@@ -296,6 +298,7 @@ export function AIRecommendationEngine({ user }: AIRecommendationEngineProps) {
       if (response) {
         setRecommendations(response);
         toast.success('New recommendations generated!');
+        void refreshAICredits();
       }
     } catch (error) {
       console.error('Error generating recommendations:', error);

@@ -1,4 +1,3 @@
-
 # AI Education Platform Revamp
 
 This is a production-ready AI Education Platform with both frontend and backend. The original design is available at https://www.figma.com/design/CmiF1964jY7xaBc07DPRkC/AI-Education-Platform-Revamp.
@@ -86,7 +85,7 @@ VITE_API_URL=http://localhost:5000/api/v1
 npm run dev
 ```
 
-The frontend will run on http://localhost:5173
+The frontend will run on http://localhost:3000
 
 ## Default Login Credentials
 
@@ -98,11 +97,22 @@ For development/testing:
 
 ## 📚 Documentation
 
-- **[QUICK_START.md](./QUICK_START.md)** - Quick setup guide
-- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Complete feature overview
-- **[backend/SETUP_GUIDE.md](./backend/SETUP_GUIDE.md)** - Production deployment guide
-- **[GEMINI_AI_IMPLEMENTATION.md](./GEMINI_AI_IMPLEMENTATION.md)** - AI integration details
-- **[BACKEND_REQUIREMENTS.md](./BACKEND_REQUIREMENTS.md)** - Full backend specifications
+### Main Documentation
+- **[PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md)** - **Complete project documentation** (Testing, Status, Architecture, Bug Fixes)
+
+### API Documentation
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - **Complete API reference** (All endpoints)
+- **[STUDENT_ENDPOINTS_DOCUMENTATION.md](./STUDENT_ENDPOINTS_DOCUMENTATION.md)** - Detailed student endpoints
+- **[docs/](./docs/)** - Backend endpoint specifications (Gradebook, Exam, Question Bank, AI)
+
+### Backend Requirements
+- **[BACKEND_REQUIREMENTS_INSTRUCTOR_PERMISSIONS.md](./BACKEND_REQUIREMENTS_INSTRUCTOR_PERMISSIONS.md)** - Instructor permissions system
+- **[BACKEND_REQUIREMENTS_STUDENT_FEATURES.md](./BACKEND_REQUIREMENTS_STUDENT_FEATURES.md)** - Student features requirements
+
+### Integration Guides
+- **[LESSON_CREATION_FRONTEND_GUIDE.md](./LESSON_CREATION_FRONTEND_GUIDE.md)** - Lesson creation guide
+- **[FRONTEND_INVITATION_GUIDE.md](./FRONTEND_INVITATION_GUIDE.md)** - Invitation system guide
+- **[AI_FRONTEND_INTEGRATION.md](./AI_FRONTEND_INTEGRATION.md)** - AI integration guide
 
 ## 🔌 API Documentation
 
@@ -274,11 +284,10 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 For issues or questions:
 - Check documentation in `/docs`
-- Review `QUICK_START.md` for setup help
-- See `backend/SETUP_GUIDE.md` for deployment
+- Review `PROJECT_DOCUMENTATION.md` for complete information
+- See `API_DOCUMENTATION.md` for API reference
 - Contact: support@yourdomain.com
 
 ---
 
 **Built with ❤️ using React, Node.js, MongoDB, and Google Gemini AI**
-  

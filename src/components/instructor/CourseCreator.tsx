@@ -32,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { useLanguage } from '../context/LanguageContext';
 
 interface CourseCreatorProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ interface CourseCreatorProps {
 export function CourseCreator({ isOpen, onClose, existingCourse, onSave, availableFields = [] }: CourseCreatorProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const { t, isRTL } = useLanguage();
   const [courseData, setCourseData] = useState({
     title: existingCourse?.title || '',
     description: existingCourse?.description || '',
@@ -239,7 +241,7 @@ export function CourseCreator({ isOpen, onClose, existingCourse, onSave, availab
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b">
           <div>

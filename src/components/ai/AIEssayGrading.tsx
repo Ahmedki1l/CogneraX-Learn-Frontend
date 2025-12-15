@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Input } from '../ui/input';
 import { useLanguage } from '../context/LanguageContext';
+import { useAICredits } from '../context/AICreditsContext';
 import { api } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -36,6 +37,7 @@ interface AIEssayGradingProps {
 
 export function AIEssayGrading({ user }: AIEssayGradingProps) {
   const { t, isRTL } = useLanguage();
+  const { refresh: refreshAICredits } = useAICredits();
   const [selectedEssay, setSelectedEssay] = useState<any>(null);
   const [gradingInProgress, setGradingInProgress] = useState(false);
   const [essays, setEssays] = useState<any[]>([]);
@@ -43,6 +45,7 @@ export function AIEssayGrading({ user }: AIEssayGradingProps) {
   const [essayText, setEssayText] = useState('');
   const [rubric, setRubric] = useState('');
   const [maxScore, setMaxScore] = useState(100);
+  const [language, setLanguage] = useState<'en' | 'ar' | 'auto'>('en');
   const [gradingResult, setGradingResult] = useState<any>(null);
 
   // Mock data for demonstration
@@ -151,14 +154,17 @@ export function AIEssayGrading({ user }: AIEssayGradingProps) {
     setGradingInProgress(true);
     try {
       const response = await api.ai.gradeEssay({
-        essay: essayText,
+        essayContent: essayText,
         rubric: rubric || 'Grade based on content quality, grammar, structure, and originality',
-        maxScore
+        maxScore,
+        language
       });
 
       if (response) {
-        setGradingResult(response);
+        const gradingData = response.data || response;
+        setGradingResult(gradingData);
         toast.success(`Essay graded! Used ${response.creditsUsed || 0} AI credits`);
+        void refreshAICredits();
       }
     } catch (error: any) {
       console.error('Essay grading failed:', error);
@@ -664,23 +670,41 @@ export function AIEssayGrading({ user }: AIEssayGradingProps) {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <label className="text-sm font-medium">{t('ai.selectCriteria', 'Select Grading Criteria')}</label>
-                <Select value={gradingCriteria} onValueChange={setGradingCriteria}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {gradingCriteriaOptions.map((criteria) => (
-                      <SelectItem key={criteria.value} value={criteria.value}>
-                        <div>
-                          <div className="font-medium">{criteria.label}</div>
-                          <div className="text-xs text-gray-600">{criteria.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <label className="text-sm font-medium">{t('ai.selectCriteria', 'Select Grading Criteria')}</label>
+                  <Select value={gradingCriteria} onValueChange={setGradingCriteria}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {gradingCriteriaOptions.map((criteria) => (
+                        <SelectItem key={criteria.value} value={criteria.value}>
+                          <div>
+                            <div className="font-medium">{criteria.label}</div>
+                            <div className="text-xs text-gray-600">{criteria.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-4">
+                  <label className="text-sm font-medium">{t('ai.feedbackLanguage', 'Feedback Language')}</label>
+                  <Select value={language} onValueChange={(value: 'en' | 'ar' | 'auto') => setLanguage(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                      <SelectItem value="auto">Auto-detect</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    {t('ai.feedbackLanguageDesc', 'Select the language for AI-generated feedback and suggestions')}
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

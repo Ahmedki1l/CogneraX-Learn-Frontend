@@ -29,7 +29,7 @@ interface CartProps {
 
 export const Cart: React.FC<CartProps> = ({ user }) => {
   const { cartItems, removeFromCart, clearCart, getTotalPrice, getTotalItems } = useCart();
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -119,8 +119,8 @@ export const Cart: React.FC<CartProps> = ({ user }) => {
 
   if (cartItems.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center space-x-4">
+      <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="flex items-center gap-4">
           <ShoppingCart className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
@@ -152,9 +152,9 @@ export const Cart: React.FC<CartProps> = ({ user }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-4">
           <ShoppingCart className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
@@ -294,30 +294,30 @@ export const Cart: React.FC<CartProps> = ({ user }) => {
                   
                   <div className="space-y-4">
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-semibold mb-2">Order Summary</h4>
+                      <h4 className="font-semibold mb-2">{t('cart.orderSummary')}</h4>
                       <div className="text-sm space-y-1">
                         <div className="flex justify-between">
-                          <span>{getTotalItems()} courses</span>
+                          <span>{getTotalItems()} {t('cart.courseCount')}</span>
                           <span>{formatPrice(getTotalPrice())}</span>
                         </div>
                         <Separator className="my-2" />
                         <div className="flex justify-between font-semibold">
-                          <span>Total</span>
+                          <span>{t('cart.total')}</span>
                           <span className="text-primary">{formatPrice(getTotalPrice())}</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <Label htmlFor="payment-method">Payment Method</Label>
+                      <Label htmlFor="payment-method">{t('cart.paymentMethod')}</Label>
                       <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select payment method" />
+                          <SelectValue placeholder={t('cart.selectPayment')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="card">Credit/Debit Card</SelectItem>
-                          <SelectItem value="paypal">PayPal</SelectItem>
-                          <SelectItem value="wallet">Digital Wallet</SelectItem>
+                          <SelectItem value="card">{t('cart.creditDebitCard')}</SelectItem>
+                          <SelectItem value="paypal">{t('cart.paypal')}</SelectItem>
+                          <SelectItem value="wallet">{t('cart.digitalWallet')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -325,7 +325,7 @@ export const Cart: React.FC<CartProps> = ({ user }) => {
                     {paymentMethod === 'card' && (
                       <div className="space-y-3">
                         <div>
-                          <Label htmlFor="cardholder-name">Cardholder Name</Label>
+                          <Label htmlFor="cardholder-name">{t('cart.cardholderName')}</Label>
                           <Input
                             id="cardholder-name"
                             value={cardholderName}
@@ -335,7 +335,7 @@ export const Cart: React.FC<CartProps> = ({ user }) => {
                         </div>
                         
                         <div>
-                          <Label htmlFor="card-number">Card Number</Label>
+                          <Label htmlFor="card-number">{t('cart.cardNumber')}</Label>
                           <Input
                             id="card-number"
                             value={cardNumber}
@@ -347,7 +347,7 @@ export const Cart: React.FC<CartProps> = ({ user }) => {
                         
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <Label htmlFor="expiry">Expiry Date</Label>
+                            <Label htmlFor="expiry">{t('cart.expiryDate')}</Label>
                             <Input
                               id="expiry"
                               value={expiryDate}
@@ -357,7 +357,7 @@ export const Cart: React.FC<CartProps> = ({ user }) => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="cvv">CVV</Label>
+                            <Label htmlFor="cvv">{t('cart.cvv')}</Label>
                             <Input
                               id="cvv"
                               value={cvv}

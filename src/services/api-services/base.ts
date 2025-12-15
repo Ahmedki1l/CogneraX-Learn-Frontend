@@ -1,8 +1,12 @@
 // Base API Configuration and Common Functionality
-const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api/v1';
+// Base API Configuration and Common Functionality
+const isDevelopment = (import.meta as any).env.MODE === 'development';
+
+const API_BASE_URL = (isDevelopment && (import.meta as any).env.VITE_API_URL_Local) 
+  ? (import.meta as any).env.VITE_API_URL_Local 
+  : ((import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api/v1');
 
 // Logger utility for production safety
-const isDevelopment = (import.meta as any).env.MODE === 'development';
 
 export const logger = {
   log: (...args: any[]) => {
@@ -222,7 +226,7 @@ export class BaseApiService {
   // Request Method
   protected async request<T>(
     endpoint: string,
-    options: RequestInit = {},
+    options: RequestInit & { responseType?: 'json' | 'blob' } = {},
     skipAuth = false
   ): Promise<T> {
     // Ensure we have a valid token for authenticated requests
@@ -253,6 +257,12 @@ export class BaseApiService {
     while (retryCount <= maxRetries) {
       try {
         response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+        if (options.responseType === 'blob') {
+          if (response.ok) {
+            return await response.blob() as any;
+          }
+        }
+
         const jsonResponse = await response.json();
 
         if (!response.ok) {

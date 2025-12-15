@@ -34,6 +34,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from 'sonner';
 import { api } from '../../services/api';
 import { Save } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Instructor {
   id: string;
@@ -62,6 +63,7 @@ interface Course {
 }
 
 export function InstructorManagement() {
+  const { t, isRTL } = useLanguage();
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [fields, setFields] = useState<Field[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -223,13 +225,13 @@ export function InstructorManagement() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Instructor Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('instructorManagement.title')}</h1>
           <p className="text-gray-600 mt-1">
-            Assign instructors to fields or courses and manage permissions
+            {t('instructorManagement.subtitle')}
           </p>
         </div>
       </div>
@@ -251,10 +253,10 @@ export function InstructorManagement() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Instructors</CardTitle>
+                <CardTitle>{t('instructorManagement.instructors')}</CardTitle>
                 <Badge variant="outline">{filteredInstructors.length}</Badge>
               </div>
-              <CardDescription>Select an instructor to manage</CardDescription>
+              <CardDescription>{t('instructorManagement.selectInstructor')}</CardDescription>
             </CardHeader>
             <CardContent>
               {/* Search and Filter */}
@@ -262,7 +264,7 @@ export function InstructorManagement() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="Search instructors..."
+                  placeholder={t('instructorManagement.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -273,10 +275,10 @@ export function InstructorManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
+                    <SelectItem value="all">{t('common.allStatus')}</SelectItem>
+                    <SelectItem value="active">{t('common.active')}</SelectItem>
+                    <SelectItem value="inactive">{t('common.inactive')}</SelectItem>
+                    <SelectItem value="suspended">{t('common.suspended')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

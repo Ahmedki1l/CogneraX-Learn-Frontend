@@ -4,7 +4,7 @@ export class InvitationApiService extends BaseApiService {
   // Get invitations
   async getInvitations(filters?: {
     status?: 'pending' | 'accepted' | 'expired' | 'cancelled';
-    type?: 'student' | 'instructor' | 'admin';
+    type?: 'student' | 'instructor' | 'admin' | 'parent';
     courseId?: string;
     page?: number;
     limit?: number;
@@ -35,7 +35,8 @@ export class InvitationApiService extends BaseApiService {
 
   // Create invitation
   async createInvitation(data: {
-    role: 'student' | 'instructor';
+    role: 'student' | 'instructor' | 'parent';
+    email?: string;
     message?: string;
     description?: string;
     expiresInDays?: number;
@@ -51,7 +52,7 @@ export class InvitationApiService extends BaseApiService {
   async createBulkInvitations(data: {
     invitations: {
       email: string;
-      role: 'student' | 'instructor' | 'admin';
+      role: 'student' | 'instructor' | 'admin' | 'parent';
       courseId?: string;
       organizationId?: string;
       message?: string;
@@ -67,7 +68,7 @@ export class InvitationApiService extends BaseApiService {
 
   // Update invitation
   async updateInvitation(invitationId: string, data: {
-    role?: 'student' | 'instructor' | 'admin';
+    role?: 'student' | 'instructor' | 'admin' | 'parent';
     courseId?: string;
     organizationId?: string;
     message?: string;
@@ -123,7 +124,7 @@ export class InvitationApiService extends BaseApiService {
     name: string;
     subject: string;
     content: string;
-    type: 'student' | 'instructor' | 'admin';
+    type: 'student' | 'instructor' | 'admin' | 'parent';
     variables?: string[];
   }): Promise<any> {
     return this.request('/invitations/templates', {
@@ -137,7 +138,7 @@ export class InvitationApiService extends BaseApiService {
     name?: string;
     subject?: string;
     content?: string;
-    type?: 'student' | 'instructor' | 'admin';
+    type?: 'student' | 'instructor' | 'admin' | 'parent';
     variables?: string[];
   }): Promise<any> {
     return this.request(`/invitations/templates/${templateId}`, {
@@ -168,7 +169,7 @@ export class InvitationApiService extends BaseApiService {
   async getInvitationAnalytics(filters?: {
     timeRange?: string;
     groupBy?: string;
-    type?: 'student' | 'instructor' | 'admin';
+    type?: 'student' | 'instructor' | 'admin' | 'parent';
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.timeRange) params.append('timeRange', filters.timeRange);
@@ -181,7 +182,7 @@ export class InvitationApiService extends BaseApiService {
   // Export invitations
   async exportInvitations(format: 'csv' | 'excel' | 'pdf', filters?: {
     status?: 'pending' | 'accepted' | 'expired' | 'cancelled';
-    type?: 'student' | 'instructor' | 'admin';
+    type?: 'student' | 'instructor' | 'admin' | 'parent';
     courseId?: string;
     dateFrom?: string;
     dateTo?: string;

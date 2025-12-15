@@ -49,6 +49,7 @@ import {
   Shuffle
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAICredits } from '../context/AICreditsContext';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -71,6 +72,7 @@ interface ContentAuthoringToolsProps {
 }
 
 export function ContentAuthoringTools({ user }: ContentAuthoringToolsProps) {
+  const { refresh: refreshAICredits } = useAICredits();
   const { t, isRTL } = useLanguage();
   const [selectedTool, setSelectedTool] = useState('editor');
   const [currentProject, setCurrentProject] = useState(null);
@@ -143,21 +145,20 @@ export function ContentAuthoringTools({ user }: ContentAuthoringToolsProps) {
         case 'analyze':
           response = await api.ai.analyzeContent({
             content: prompt,
-            type: 'lesson'
+            analysisType: 'lesson'
           });
           break;
         case 'recreate':
           response = await api.ai.recreateContent({
-            content: prompt,
-            style: 'educational',
-            level: 'intermediate'
+            originalContent: prompt,
+            enhancementType: 'educational'
           });
           break;
         case 'teaching-plan':
           response = await api.ai.generateTeachingPlan({
-            topic: prompt,
-            duration: '45 minutes',
-            level: 'intermediate'
+            content: prompt,
+            sessionMinutes: 45,
+            studentLevel: 'intermediate'
           });
           break;
         default:
@@ -165,8 +166,9 @@ export function ContentAuthoringTools({ user }: ContentAuthoringToolsProps) {
       }
       
       if (response) {
-        setGeneratedContent(response);
+        setGeneratedContent(response.data || response);
         toast.success('Content generated successfully!');
+        void refreshAICredits();
       } else {
         throw new Error('Failed to generate content');
       }
@@ -951,7 +953,7 @@ export function ContentAuthoringTools({ user }: ContentAuthoringToolsProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

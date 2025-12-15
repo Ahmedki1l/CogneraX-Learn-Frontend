@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { toast } from 'sonner';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from '../ui/utils';
+import { useLanguage } from '../context/LanguageContext';
 
 // Utility function to fix URLs with wrong port
 const fixBackendUrl = (url: string): string => {
@@ -41,6 +42,7 @@ interface PdfViewerProps {
 }
 
 export function PdfViewer({ isOpen, onClose, resource }: PdfViewerProps) {
+  const { t, isRTL } = useLanguage();
   const [pdfLoadError, setPdfLoadError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);

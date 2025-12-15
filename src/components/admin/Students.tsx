@@ -54,7 +54,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { api } from '../../services/api';
 
 export function Students() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [students, setStudents] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [statistics, setStatistics] = useState<any>(null);
@@ -553,7 +553,7 @@ export function Students() {
   }
 
   return (
-    <div className="space-y-8 relative z-10 pointer-events-auto">
+    <div className="space-y-8 relative z-10 pointer-events-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Error Banner */}
       {error && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -568,11 +568,10 @@ export function Students() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Students & Progress
+            {t('students.title')}
           </h1>
           <p className="text-gray-600 mt-2">
-            Monitor student progress and engagement across all
-            courses
+            {t('students.subtitle')}
           </p>
         </div>
         <Button 
@@ -588,7 +587,7 @@ export function Students() {
           ) : (
             <>
               <UserPlus className="h-4 w-4 mr-2" />
-              Invite Students
+              {t('students.inviteStudents')}
             </>
           )}
         </Button>
@@ -601,7 +600,7 @@ export function Students() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-600 mb-1">
-                  Total Students
+                  {t('students.totalStudents')}
                 </p>
                 <p className="text-3xl font-bold text-blue-900">
                   {statistics?.totalStudents?.toLocaleString() || '0'}
@@ -625,7 +624,7 @@ export function Students() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-green-600 mb-1">
-                  Active This Week
+                  {t('students.activeThisWeek')}
                 </p>
                 <p className="text-3xl font-bold text-green-900">
                   {statistics?.activeStudents?.toLocaleString() || '0'}
@@ -649,7 +648,7 @@ export function Students() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-purple-600 mb-1">
-                  Avg Completion
+                  {t('students.avgCompletion')}
                 </p>
                 <p className="text-3xl font-bold text-purple-900">
                   {statistics?.averageProgress ? `${statistics.averageProgress}%` : '0%'}
@@ -673,7 +672,7 @@ export function Students() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-red-600 mb-1">
-                  At Risk
+                  {t('students.atRisk')}
                 </p>
                 <p className="text-3xl font-bold text-red-900">
                   {statistics?.atRiskStudents?.toLocaleString() || '0'}

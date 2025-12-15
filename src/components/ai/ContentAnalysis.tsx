@@ -1,326 +1,901 @@
-import React, { useState } from 'react';
-import { 
-  Upload, 
-  Brain, 
-  FileText, 
-  TrendingUp, 
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Upload,
+  Brain,
+  TrendingUp,
   AlertCircle,
   CheckCircle,
   Lightbulb,
-  Target,
-  Users,
-  Clock,
   Wand2,
-  RefreshCw,
   Download,
-  Copy,
-  Edit3,
   Sparkles,
   BookOpen,
-  PlusCircle,
-  ArrowRight
+  ArrowRight,
+  Clock,
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../ui/card';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Textarea } from '../ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import { Input } from '../ui/input';
 import { api } from '../../services/api';
+import { useAICredits } from '../context/AICreditsContext';
 import { toast } from 'sonner';
+import { useLanguage } from '../context/LanguageContext';
+
+const HISTORY_LIMIT = 20;
+
+interface AccessibleResource {
+  id: string;
+  title?: string;
+  type?: string;
+  url?: string;
+  description?: string;
+  extractedText?: string;
+  text?: string;
+  content?: string;
+  textContent?: string;
+  size?: number;
+  updatedAt?: string;
+}
+
+interface AccessibleLesson {
+  _id: string;
+  title: string;
+  description?: string;
+  content?: string;
+  resources?: AccessibleResource[];
+}
+
+interface AccessibleCourse {
+  _id: string;
+  title: string;
+  description?: string;
+  status?: string;
+  lessons?: number;
+  students?: number;
+}
+
+interface AccessibleField {
+  _id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  accessType?: string;
+  permissions?: string[];
+  courses: AccessibleCourse[];
+}
+
+interface HistoryEntry {
+  id: string;
+  type: string;
+  language?: string;
+  createdAt: string;
+  creditsUsed?: number;
+  payload: any;
+  result: any;
+}
+
+const normalizeCollection = (response: any): any[] => {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (Array.isArray(response.items)) return response.items;
+  if (Array.isArray(response.results)) return response.results;
+  if (response.data?.items) return response.data.items;
+  if (Array.isArray(response.courses)) return response.courses;
+  if (Array.isArray(response.lessons)) return response.lessons;
+  if (Array.isArray(response.history)) return response.history;
+  return [];
+};
+
+const normalizeAccessibleFields = (response: any): AccessibleField[] => {
+  const source = response?.data?.fields || response?.fields || [];
+  return source.map((field: any) => ({
+    _id: field._id || field.id,
+    name: field.name,
+    description: field.description,
+    icon: field.icon,
+    accessType: field.accessType,
+    permissions: field.permissions || [],
+    courses: (field.courses || []).map((course: any) => ({
+      _id: course._id || course.id,
+      title: course.title || course.name || 'Untitled course',
+      description: course.description,
+      status: course.status,
+      lessons: course.lessons,
+      students: course.students,
+    })),
+  }));
+};
+
+const mapLesson = (lesson: any): AccessibleLesson => ({
+  _id: lesson._id || lesson.id,
+  title: lesson.title || lesson.name || 'Untitled lesson',
+  description: lesson.description,
+  content: lesson.content,
+  resources: (lesson.resources || []).map((resource: any) => ({
+    id: resource._id || resource.id,
+    title: resource.title,
+    type: resource.type,
+    url: resource.url,
+    description: resource.description,
+    extractedText: resource.extractedText,
+    text: resource.text,
+    content: resource.content,
+    textContent: resource.textContent,
+    size: resource.size,
+    updatedAt: resource.updatedAt,
+  })),
+});
+
+const extractResourceText = (resource: AccessibleResource | null): string => {
+  if (!resource) return '';
+  return (
+    resource.textContent ||
+    resource.content ||
+    resource.extractedText ||
+    resource.text ||
+    ''
+  );
+};
+
+const downloadJson = (filename: string, data: any) => {
+  try {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Failed to download file', error);
+    toast.error('Unable to download file');
+  }
+};
+
+const formatHistoryType = (type: string) => {
+  switch (type) {
+    case 'analyze-content':
+      return 'Analysis';
+    case 'recreate-content':
+      return 'Enhanced Content';
+    case 'generate-teaching-plan':
+      return 'Teaching Plan';
+    default:
+      return type;
+  }
+};
+
+const formatDateTime = (value?: string) => {
+  if (!value) return 'Unknown date';
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+};
 
 export function ContentAnalysis() {
-  const [content, setContent] = useState('');
+  const { refresh: refreshCredits } = useAICredits();
+
+  const [language, setLanguage] = useState<'en' | 'ar'>('en');
+  const [user, setUser] = useState<any>(null);
+
+  const [accessibleFields, setAccessibleFields] = useState<AccessibleField[]>([]);
+  const [selectedFieldId, setSelectedFieldId] = useState<string>('');
+  const [courses, setCourses] = useState<AccessibleCourse[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+
+  const [lessons, setLessons] = useState<AccessibleLesson[]>([]);
+  const [selectedLessonId, setSelectedLessonId] = useState<string>('');
+  const [selectedLesson, setSelectedLesson] = useState<AccessibleLesson | null>(null);
+
+  const [lessonResources, setLessonResources] = useState<AccessibleResource[]>([]);
+  const [selectedResourceId, setSelectedResourceId] = useState<string>('');
+  const [selectedResource, setSelectedResource] = useState<AccessibleResource | null>(null);
+  const [resourceContent, setResourceContent] = useState<string>('');
+
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+
   const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [recreatedContent, setRecreatedContent] = useState<any>(null);
+  const [teachingPlanResult, setTeachingPlanResult] = useState<any>(null);
+  const [sessionMinutes, setSessionMinutes] = useState<number>(60);
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRecreating, setIsRecreating] = useState(false);
-  const [recreatedContent, setRecreatedContent] = useState<any>(null);
-  const [recreationType, setRecreationType] = useState<string | null>(null);
-  const [activeRecreationTab, setActiveRecreationTab] = useState('overview');
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  const resourcePreview = useMemo(
+    () => resourceContent.slice(0, 2000) + (resourceContent.length > 2000 ? '…' : ''),
+    [resourceContent],
+  );
+
+  const canRunAI = resourceContent.trim().length > 0;
+
+  const appendHistoryEntry = (entry: Partial<HistoryEntry>) => {
+    const id = entry.id || `${entry.type}-${entry.createdAt || Date.now()}`;
+    const createdAt = entry.createdAt || new Date().toISOString();
+    const normalized: HistoryEntry = {
+      id,
+      type: entry.type || 'unknown',
+      language: entry.language,
+      createdAt,
+      creditsUsed: entry.creditsUsed,
+      payload: entry.payload || {},
+      result: entry.result,
+    };
+    setHistoryEntries((prev) => [normalized, ...prev].slice(0, HISTORY_LIMIT));
+  };
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const response = await api.ai.getAIHistory({ limit: HISTORY_LIMIT });
+      const items = normalizeCollection(response).map((item: any) => ({
+        id: item.id || item._id,
+        type: item.type || item.action,
+        language: item.language || item.payload?.language,
+        createdAt: item.createdAt || item.timestamp || item.created_at || new Date().toISOString(),
+        creditsUsed:
+          item.creditsUsed || item.metadata?.creditsUsed || item.response?.creditsUsed,
+        payload: item.payload || item.request || {},
+        result: item.result || item.response?.data || item.response || item.output,
+      }));
+      setHistoryEntries(items.slice(0, HISTORY_LIMIT));
+    } catch (error: any) {
+      console.error('Failed to load AI history', error);
+      setHistoryError(error?.message || 'Unable to load AI history');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const loadAccessibleHierarchy = async (currentUser: any) => {
+    if (!currentUser) return;
+    setCoursesLoading(true);
+    try {
+      const instructorId = currentUser._id || currentUser.id;
+      const response = await api.course.getAccessibleCourses(instructorId);
+      const fields = normalizeAccessibleFields(response);
+      setAccessibleFields(fields);
+      if (fields.length > 0) {
+        setSelectedFieldId((prev) => prev || fields[0]._id);
+      }
+    } catch (error) {
+      console.error('Failed to load accessible courses', error);
+      toast.error('Unable to load accessible courses');
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+
+  const fetchLessons = async (courseId: string) => {
+    if (!courseId) {
+      setLessons([]);
+      setSelectedLessonId('');
+      return;
+    }
+    setLessonsLoading(true);
+    try {
+      const response = await api.course.getLessons(courseId);
+      const normalized = normalizeCollection(response).map(mapLesson);
+      setLessons(normalized);
+      if (normalized.length > 0) {
+        setSelectedLessonId((prev) => prev || normalized[0]._id);
+      }
+    } catch (error) {
+      console.error('Failed to load lessons', error);
+      toast.error('Unable to load lessons for this course');
+      setLessons([]);
+      setSelectedLessonId('');
+    } finally {
+      setLessonsLoading(false);
+    }
+  };
+
+  const fetchLessonResources = async (lesson: AccessibleLesson | null) => {
+    if (!lesson) {
+      setLessonResources([]);
+      setSelectedResourceId('');
+      setSelectedResource(null);
+      setResourceContent('');
+      return;
+    }
+    if ((lesson.resources?.length || 0) > 0) {
+      setLessonResources(lesson.resources as AccessibleResource[]);
+      setSelectedResourceId((prev) => prev || (lesson.resources as AccessibleResource[])[0].id);
+      return;
+    }
+    setResourcesLoading(true);
+    try {
+      const response = await api.course.getLesson(lesson._id);
+      const details = response?.data || response;
+      const resources = (details?.resources || []).map((resource: any) => ({
+        id: resource._id || resource.id,
+        title: resource.title,
+        type: resource.type,
+        url: resource.url,
+        description: resource.description,
+        extractedText: resource.extractedText,
+        text: resource.text,
+        content: resource.content,
+        textContent: resource.textContent,
+        size: resource.size,
+        updatedAt: resource.updatedAt,
+      }));
+      setLessonResources(resources);
+      if (resources.length > 0) {
+        setSelectedResourceId(resources[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load lesson resources', error);
+      toast.error('Unable to load resources for this lesson');
+      setLessonResources([]);
+      setSelectedResourceId('');
+      setSelectedResource(null);
+      setResourceContent('');
+    } finally {
+      setResourcesLoading(false);
+    }
+  };
+
+  const loadResourceContent = async (resource: AccessibleResource | null) => {
+    if (!resource) {
+      setSelectedResource(null);
+      setResourceContent('');
+      return;
+    }
+    setResourcesLoading(true);
+    try {
+      let text = extractResourceText(resource);
+      if (!text && resource.url) {
+        try {
+          const resp = await fetch(resource.url);
+          const blob = await resp.blob();
+          if (blob.type.startsWith('text/')) {
+            text = await blob.text();
+          } else {
+            text = '[Unsupported resource type for inline preview]';
+          }
+        } catch (error) {
+          console.error('Failed to fetch resource content', error);
+          text = '[Unable to fetch resource content]';
+        }
+      }
+      const enriched = { ...resource, textContent: text };
+      setSelectedResource(enriched);
+      setResourceContent(text || '');
+    } finally {
+      setResourcesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        const me = await api.getMe();
+        setUser(me);
+        await loadAccessibleHierarchy(me);
+      } catch (error) {
+        console.error('Failed to load user', error);
+      }
+      await fetchHistory();
+      void refreshCredits();
+    };
+
+    void initialize();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedFieldId) {
+      setCourses([]);
+      setSelectedCourseId('');
+      return;
+    }
+    const field = accessibleFields.find((item) => item._id === selectedFieldId);
+    const fieldCourses = field?.courses || [];
+    setCourses(fieldCourses);
+    if (fieldCourses.length > 0) {
+      setSelectedCourseId((prev) => (fieldCourses.some((c) => c._id === prev) ? prev : fieldCourses[0]._id));
+    } else {
+      setSelectedCourseId('');
+    }
+  }, [selectedFieldId, accessibleFields]);
+
+  useEffect(() => {
+    if (selectedCourseId) {
+      void fetchLessons(selectedCourseId);
+    } else {
+      setLessons([]);
+      setSelectedLessonId('');
+    }
+    setLessonResources([]);
+    setSelectedResourceId('');
+    setSelectedResource(null);
+    setResourceContent('');
+  }, [selectedCourseId]);
+
+  useEffect(() => {
+    if (!selectedLessonId) {
+      setSelectedLesson(null);
+      void fetchLessonResources(null);
+      return;
+    }
+    const lesson = lessons.find((item) => item._id === selectedLessonId) || null;
+    setSelectedLesson(lesson);
+    void fetchLessonResources(lesson);
+  }, [selectedLessonId, lessons]);
+
+  useEffect(() => {
+    if (!selectedResourceId) {
+      setSelectedResource(null);
+      setResourceContent('');
+      return;
+    }
+    const resource = lessonResources.find((item) => item.id === selectedResourceId) || null;
+    void loadResourceContent(resource);
+  }, [selectedResourceId, lessonResources]);
+
+  const currentResourceMeta = selectedResource
+    ? {
+        fieldId: selectedFieldId,
+        courseId: selectedCourseId,
+        lessonId: selectedLessonId,
+        resourceId: selectedResource.id,
+        fieldTitle: accessibleFields.find((f) => f._id === selectedFieldId)?.name,
+        courseTitle: courses.find((c) => c._id === selectedCourseId)?.title,
+        lessonTitle: selectedLesson?.title,
+        resourceTitle: selectedResource.title,
+      }
+    : null;
 
   const handleAnalyze = async () => {
-    if (!content.trim()) {
-      toast.error('Please enter content to analyze');
+    if (!canRunAI || !selectedResource) {
+      toast.error('Select a resource before running AI analysis');
       return;
     }
-
     setIsAnalyzing(true);
     try {
-      const response = await api.ai.analyzeContent(content);
-      if (response) {
-        setAnalysisResults(response);
-        toast.success(`Content analyzed! Used ${response.creditsUsed || 0} AI credits`);
-      }
-    } catch (error: any) {
-      console.error('Analysis failed:', error);
-      toast.error(error?.error?.message || 'Failed to analyze content');
-      // Fallback to mock data for demo
-      setTimeout(() => {
-      setAnalysisResults({
-        overallScore: 87,
-        keyTopics: ['React Hooks', 'State Management', 'Component Lifecycle', 'Performance Optimization'],
-        strengths: [
-          'Clear explanation of useState and useEffect',
-          'Good code examples with practical applications',
-          'Progressive difficulty structure'
-        ],
-        weaknesses: [
-          'Missing advanced hooks coverage',
-          'Limited error handling examples',
-          'Could use more interactive elements'
-        ],
-        improvements: [
-          'Add useCallback and useMemo examples',
-          'Include error boundary patterns',
-          'Create interactive coding exercises',
-          'Add visual diagrams for complex concepts'
-        ],
-        studentImpact: {
-          beginnerFriendly: 92,
-          practicalApplication: 85,
-          comprehensiveness: 78,
-          engagement: 81
-        },
-        estimatedTime: '45 minutes',
-        difficulty: 'Intermediate',
-        prerequisites: ['Basic JavaScript', 'HTML/CSS fundamentals']
+      const payload: any = {
+        content: resourceContent,
+        language,
+        resource: currentResourceMeta,
+      };
+      const response = await api.ai.analyzeContent(payload);
+      const raw = response.data || response;
+      const normalizedStudentImpact = raw.studentImpact ?? {
+        beginnerFriendly: raw.readabilityScore ?? raw.overallScore ?? 0,
+        practicalApplication: raw.engagementScore ?? raw.overallScore ?? 0,
+        comprehensiveness: raw.overallScore ?? 0,
+        engagement: raw.engagementScore ?? 0,
+      };
+      const analysis = {
+        ...raw,
+        studentImpact: normalizedStudentImpact,
+        strengths: Array.isArray(raw.strengths) ? raw.strengths : [],
+        weaknesses: Array.isArray(raw.weaknesses) ? raw.weaknesses : [],
+        improvements: Array.isArray(raw.improvements) ? raw.improvements : [],
+        learningObjectives: Array.isArray(raw.learningObjectives) ? raw.learningObjectives : [],
+      };
+      setAnalysisResults(analysis);
+      toast.success(
+        `Content analyzed! Used ${response.creditsUsed || analysis.creditsUsed || 0} AI credits`,
+      );
+      appendHistoryEntry({
+        type: 'analyze-content',
+        language,
+        creditsUsed: response.creditsUsed || analysis.creditsUsed || 0,
+        createdAt: new Date().toISOString(),
+        payload,
+        result: analysis,
       });
-      setIsAnalyzing(false);
-    }, 3000);
+      void refreshCredits();
+    } catch (error: any) {
+      console.error('Analysis failed', error);
+      toast.error(error?.error?.message || 'Failed to analyze content');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const handleContentRecreation = async (type: string) => {
-    if (!content.trim()) {
-      toast.error('Please enter content to recreate');
+  const handleContentRecreation = async () => {
+    if (!canRunAI || !selectedResource) {
+      toast.error('Select a resource before enhancing content');
       return;
     }
-
-    setRecreationType(type);
     setIsRecreating(true);
-    
+    setRecreatedContent(null);
     try {
-      const response = await api.ai.recreateContent(content, type);
-      if (response) {
-        setRecreatedContent(response);
-        toast.success(`Content recreated! Used ${response.creditsUsed || 0} AI credits`);
-      }
-    } catch (error: any) {
-      console.error('Recreation failed:', error);
-      toast.error(error?.error?.message || 'Failed to recreate content');
-      // Fallback to mock data for demo
-      setTimeout(() => {
-      const recreationResults = {
-        enhanced: {
-          title: "React Hooks: Complete Interactive Guide",
-          sections: [
-            {
-              title: "Introduction to React Hooks",
-              content: "React Hooks revolutionized functional components by allowing state and lifecycle management without classes. This comprehensive guide will take you from beginner to advanced hooks usage with practical examples and real-world applications.",
-              type: "text",
-              enhanced: true
-            },
-            {
-              title: "useState Hook - Interactive Demo",
-              content: "Experience state management in action with this interactive counter example. Click the buttons below to see how useState updates component state in real-time.",
-              type: "interactive",
-              component: "CounterDemo"
-            },
-            {
-              title: "useEffect Hook - Visual Timeline",
-              content: "Understanding useEffect is crucial for side effects management. This visual timeline shows exactly when useEffect runs in the component lifecycle.",
-              type: "visualization",
-              component: "EffectTimeline"
-            },
-            {
-              title: "Advanced Hooks Workshop",
-              content: "Put your knowledge to test with these hands-on coding challenges. Each exercise builds upon the previous one, reinforcing your understanding.",
-              type: "exercise",
-              component: "HooksWorkshop"
-            }
-          ],
-          improvements: [
-            "Added interactive demonstrations",
-            "Included visual learning aids",
-            "Created hands-on exercises",
-            "Enhanced with real-world examples",
-            "Improved accessibility features"
-          ]
-        },
-        comprehensive: {
-          title: "Complete React Hooks Mastery Course",
-          sections: [
-            { title: "Module 1: Hook Fundamentals", lessons: 8, duration: "2 hours" },
-            { title: "Module 2: State Management", lessons: 12, duration: "3 hours" },
-            { title: "Module 3: Side Effects", lessons: 10, duration: "2.5 hours" },
-            { title: "Module 4: Performance Optimization", lessons: 15, duration: "4 hours" },
-            { title: "Module 5: Custom Hooks", lessons: 8, duration: "2 hours" },
-            { title: "Module 6: Advanced Patterns", lessons: 12, duration: "3.5 hours" }
-          ],
-          features: [
-            "65 comprehensive lessons",
-            "Interactive coding environment",
-            "Real-world project builds",
-            "Automated assessment system",
-            "Progress tracking dashboard",
-            "Community discussion forums"
-          ]
-        },
-        targeted: {
-          beginners: {
-            title: "React Hooks for Beginners",
-            focus: "Gentle introduction with step-by-step guidance",
-            features: ["Visual metaphors", "Simplified examples", "Glossary included", "Video explanations"]
-          },
-          intermediate: {
-            title: "React Hooks in Practice",
-            focus: "Real-world applications and best practices",
-            features: ["Case studies", "Performance tips", "Common pitfalls", "Code reviews"]
-          },
-          advanced: {
-            title: "Advanced React Hooks Patterns",
-            focus: "Complex patterns and optimization techniques",
-            features: ["Custom hook libraries", "Performance profiling", "Advanced patterns", "Architecture decisions"]
-          }
-        },
-        multimodal: {
-          text: "Enhanced written content with clear explanations",
-          video: "12 video lessons with screen recordings",
-          interactive: "8 hands-on coding exercises",
-          quizzes: "15 assessment quizzes with instant feedback",
-          projects: "3 real-world projects to build"
-        }
+      const payload: any = {
+        originalContent: resourceContent,
+        enhancementType: 'enhanced',
+        language,
+        resource: currentResourceMeta,
       };
-      
-      setRecreatedContent(recreationResults);
-      setIsRecreating(false);
-    }, 4000);
+      const response = await api.ai.recreateContent(payload);
+      const raw = response.data || response;
+      const normalized = {
+        sections: raw.enhancedContent?.sections ?? raw.sections ?? [],
+        improvements: raw.improvements ?? [],
+        addedFeatures: raw.addedFeatures ?? [],
+        creditsUsed: raw.creditsUsed ?? response.creditsUsed ?? 0,
+        language: raw.language ?? response.language ?? language,
+      };
+      setRecreatedContent(normalized);
+      toast.success(
+        `Content recreated! Used ${normalized.creditsUsed || 0} AI credits`,
+      );
+      appendHistoryEntry({
+        type: 'recreate-content',
+        language,
+        creditsUsed: normalized.creditsUsed,
+        createdAt: new Date().toISOString(),
+        payload,
+        result: normalized,
+      });
+      void refreshCredits();
+    } catch (error: any) {
+      console.error('Recreation failed', error);
+      toast.error(error?.error?.message || 'Failed to recreate content');
     } finally {
       setIsRecreating(false);
     }
   };
 
+  const handleTeachingPlan = async () => {
+    if (!canRunAI || !selectedResource) {
+      toast.error('Select a resource before generating a teaching plan');
+      return;
+    }
+    if (!Number.isFinite(sessionMinutes) || sessionMinutes < 1) {
+      toast.error('Enter a valid session duration (minutes)');
+      return;
+    }
+    setIsGeneratingPlan(true);
+    setTeachingPlanResult(null);
+    try {
+      const payload: any = {
+        content: resourceContent,
+        sessionMinutes,
+        language,
+        resource: currentResourceMeta,
+      };
+      const response = await api.ai.generateTeachingPlan(payload);
+      const raw = response.data || response;
+      setTeachingPlanResult(raw);
+      toast.success(
+        `Teaching plan generated! Used ${response.creditsUsed || raw.creditsUsed || 0} AI credits`,
+      );
+      appendHistoryEntry({
+        type: 'generate-teaching-plan',
+        language,
+        creditsUsed: response.creditsUsed || raw.creditsUsed || 0,
+        createdAt: new Date().toISOString(),
+        payload,
+        result: raw,
+      });
+      void refreshCredits();
+    } catch (error: any) {
+      console.error('Teaching plan generation failed', error);
+      toast.error(error?.error?.message || 'Failed to generate teaching plan');
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  };
+
+  const handleLoadHistory = (entry: HistoryEntry) => {
+    if (!entry) return;
+    if (entry.language) {
+      setLanguage(entry.language as 'en' | 'ar');
+    }
+    if (entry.payload?.resource) {
+      const { fieldId, courseId, lessonId, resourceId } = entry.payload.resource;
+      if (fieldId) setSelectedFieldId(fieldId);
+      if (courseId) setSelectedCourseId(courseId);
+      if (lessonId) setSelectedLessonId(lessonId);
+      if (resourceId) setSelectedResourceId(resourceId);
+    }
+    if (typeof entry.payload?.sessionMinutes === 'number') {
+      setSessionMinutes(entry.payload.sessionMinutes);
+    }
+    if (entry.type === 'analyze-content') {
+      setAnalysisResults(entry.result);
+    }
+    if (entry.type === 'recreate-content') {
+      setRecreatedContent(entry.result);
+    }
+    if (entry.type === 'generate-teaching-plan') {
+      setTeachingPlanResult(entry.result);
+    }
+  };
+
+  const { t, isRTL } = useLanguage();
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Content Analysis</h1>
-          <p className="text-gray-600 mt-1">
-            Upload educational content to get AI-powered insights and recommendations
-          </p>
+    <div className="space-y-8" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{t('contentAnalysis.title')}</h1>
+            <p className="text-gray-600 mt-1">
+              {t('contentAnalysis.subtitle')}
+            </p>
+          </div>
+          <Badge
+            variant="secondary"
+            className="bg-purple-100 text-purple-700 flex items-center gap-2"
+          >
+            <Brain className="h-4 w-4" />
+            {t('contentAnalysis.geminiAssisted')}
+          </Badge>
         </div>
-        <div className="flex items-center space-x-2">
-          <Brain className="h-6 w-6 text-purple-600" />
-          <span className="font-medium text-purple-600">Powered by AI</span>
+
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || !canRunAI}
+            size="lg"
+            className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700"
+          >
+            {isAnalyzing ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                {t('contentAnalysis.analyzing')}
+              </>
+            ) : (
+              <>
+                <Brain className="h-4 w-4 mr-2" />
+                {t('contentAnalysis.analyze')}
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleContentRecreation}
+            disabled={isRecreating || !canRunAI}
+            variant="outline"
+            className="border-purple-200 text-purple-600 hover:bg-purple-50"
+          >
+            <Wand2 className="h-4 w-4 mr-2" />
+            {t('contentAnalysis.enhanceContent')}
+          </Button>
+
+          <Button
+            onClick={handleTeachingPlan}
+            disabled={isGeneratingPlan || !canRunAI}
+            variant="outline"
+            className="border-teal-200 text-teal-600 hover:bg-teal-50"
+          >
+            <BookOpen className="h-4 w-4 mr-2" />
+            {t('contentAnalysis.teachingPlan')}
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-4 items-center">
+          <div>
+            <p className="text-xs uppercase font-semibold text-gray-500">{t('contentAnalysis.outputLanguage')}</p>
+            <Select value={language} onValueChange={(value: 'en' | 'ar') => setLanguage(value)}>
+              <SelectTrigger className="w-40 mt-1">
+                <SelectValue placeholder={t('contentAnalysis.selectLanguage')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="ar">Arabic</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedResource && (
+            <div className="flex flex-col text-xs text-gray-500">
+              <span className="font-semibold text-gray-600">{t('contentAnalysis.selectedResource')}</span>
+              <span>
+                {selectedResource.title || t('contentAnalysis.resource')} · {selectedResource.type || 'content'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Upload Section */}
       <Card className="border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center">
             <div className="h-10 w-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3">
               <Upload className="h-5 w-5 text-white" />
             </div>
-            Upload Content for Analysis
+            {t('contentAnalysis.selectResourceTitle')}
           </CardTitle>
           <CardDescription>
-            Supported formats: PDF, DOCX, TXT, MD, Video (MP4), Audio (MP3)
+            {t('contentAnalysis.selectResourceDesc')}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Textarea
-              placeholder="Paste your educational content here for AI analysis..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={8}
-              className="resize-none"
-            />
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                {content.length} characters • AI analysis cost: 10 credits
-              </p>
-
-              <div className="flex flex-col sm:flex-row justify-center gap-3">
-              <Button variant="outline" size="lg" className="min-w-32">
-                <FileText className="h-4 w-4 mr-2" />
-                Browse Files
-              </Button>
-              <Button 
-                onClick={handleAnalyze}
-                disabled={isAnalyzing}
-                size="lg"
-                className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700 min-w-32"
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1">
+              <p className="text-xs uppercase font-semibold text-gray-500">{t('contentAnalysis.field')}</p>
+              <Select
+                value={selectedFieldId}
+                onValueChange={(value: string) => setSelectedFieldId(value)}
+                disabled={coursesLoading || accessibleFields.length === 0}
               >
-                {isAnalyzing ? (
-                  <>
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="h-4 w-4 mr-2" />
-                    Analyze Sample Content
-                  </>
-                )}
-              </Button>
-              </div>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={coursesLoading ? t('contentAnalysis.loadingFields') : t('contentAnalysis.selectField')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {accessibleFields.map((field) => (
+                    <SelectItem key={field._id} value={field._id}>
+                      {field.icon ? `${field.icon} ` : ''}{field.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs uppercase font-semibold text-gray-500">{t('contentAnalysis.course')}</p>
+              <Select
+                value={selectedCourseId}
+                onValueChange={(value: string) => setSelectedCourseId(value)}
+                disabled={coursesLoading || courses.length === 0}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      coursesLoading
+                        ? t('contentAnalysis.loadingCourses')
+                        : selectedFieldId
+                        ? t('contentAnalysis.selectCourse')
+                        : t('contentAnalysis.selectFieldFirst')
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((course) => (
+                    <SelectItem key={course._id} value={course._id}>
+                      {course.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1">
+              <p className="text-xs uppercase font-semibold text-gray-500">{t('contentAnalysis.lesson')}</p>
+              <Select
+                value={selectedLessonId}
+                onValueChange={(value: string) => setSelectedLessonId(value)}
+                disabled={lessonsLoading || lessons.length === 0}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      selectedCourseId
+                        ? lessonsLoading
+                          ? t('contentAnalysis.loadingLessons')
+                          : 'Select a lesson'
+                        : 'Choose a course first'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {lessons.map((lesson) => (
+                    <SelectItem key={lesson._id} value={lesson._id}>
+                      {lesson.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs uppercase font-semibold text-gray-500">Resource</p>
+              <Select
+                value={selectedResourceId}
+                onValueChange={(value: string) => setSelectedResourceId(value)}
+                disabled={resourcesLoading || lessonResources.length === 0}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      selectedLessonId
+                        ? resourcesLoading
+                          ? t('contentAnalysis.loadingResources')
+                          : lessonResources.length > 0
+                          ? t('contentAnalysis.selectResource')
+                          : t('contentAnalysis.noResources')
+                        : t('contentAnalysis.selectLessonFirst')
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {lessonResources.map((resource) => (
+                    <SelectItem key={resource.id} value={resource.id}>
+                      {resource.type ? `[${resource.type}] ` : ''}{resource.title || 'Resource'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1">
+              <p className="text-xs uppercase font-semibold text-gray-500">Session Minutes</p>
+              <Input
+                type="number"
+                min={1}
+                step={5}
+                value={sessionMinutes}
+                onChange={(event) =>
+                  setSessionMinutes(Math.max(1, Number(event.target.value) || 1))
+                }
+              />
+              <p className="text-xs text-gray-500">
+                {t('contentAnalysis.enteredSessionDurationDesc')}
+              </p>
+            </div>
+          </div>
+
+          <Card className="bg-gray-50 border-dashed border-gray-200">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold text-gray-700">
+                Resource preview
+              </CardTitle>
+              <CardDescription>
+                The AI will process the content below. Ensure the correct resource is selected.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {resourcesLoading ? (
+                <p className="text-sm text-gray-500">Loading resource content…</p>
+              ) : canRunAI ? (
+                <div className="max-h-48 overflow-auto text-xs bg-white border rounded p-3 whitespace-pre-wrap leading-snug text-gray-700">
+                  {resourcePreview}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  {t('contentAnalysis.selectResourceContentLoad')}
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </CardContent>
       </Card>
 
-      {/* Analysis Loading */}
-      {isAnalyzing && (
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50">
-          <CardContent className="p-12">
-            <div className="text-center">
-              <div className="relative mb-8">
-                <div className="animate-spin h-16 w-16 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Brain className="h-6 w-6 text-purple-600 animate-pulse" />
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-teal-600 bg-clip-text text-transparent mb-3">
-                AI is analyzing your content...
-              </h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Our advanced AI is processing and evaluating your material to provide comprehensive insights
-              </p>
-              
-              <div className="flex justify-center space-x-8 text-sm text-gray-500">
-                <div className="flex items-center">
-                  <div className="h-2 w-2 bg-purple-600 rounded-full animate-pulse mr-2"></div>
-                  Extracting key topics
-                </div>
-                <div className="flex items-center">
-                  <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse mr-2"></div>
-                  Analyzing structure
-                </div>
-                <div className="flex items-center">
-                  <div className="h-2 w-2 bg-teal-600 rounded-full animate-pulse mr-2"></div>
-                  Generating insights
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Analysis Results */}
       {analysisResults && !isAnalyzing && (
         <div className="space-y-6">
-          {/* Overall Score */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center">
                   <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
-                  Overall Content Score
+                  {t('contentAnalysis.overallScore')}
                 </span>
                 <Badge variant="secondary" className="text-lg px-3 py-1">
                   {analysisResults.overallScore}/100
@@ -331,627 +906,368 @@ export function ContentAnalysis() {
               <Progress value={analysisResults.overallScore} className="h-3 mb-4" />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-teal-600">{analysisResults.studentImpact.beginnerFriendly}%</div>
+                  <div className="text-2xl font-bold text-teal-600">
+                    {analysisResults.studentImpact?.beginnerFriendly ?? 0}%
+                  </div>
                   <div className="text-sm text-gray-500">Beginner Friendly</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{analysisResults.studentImpact.practicalApplication}%</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {analysisResults.studentImpact?.practicalApplication ?? 0}%
+                  </div>
                   <div className="text-sm text-gray-500">Practical Application</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{analysisResults.studentImpact.comprehensiveness}%</div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {analysisResults.studentImpact?.comprehensiveness ?? 0}%
+                  </div>
                   <div className="text-sm text-gray-500">Comprehensiveness</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{analysisResults.studentImpact.engagement}%</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {analysisResults.studentImpact?.engagement ?? 0}%
+                  </div>
                   <div className="text-sm text-gray-500">Engagement</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Detailed Analysis */}
-          <Tabs defaultValue="insights" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="insights">Key Insights</TabsTrigger>
-              <TabsTrigger value="strengths">Strengths</TabsTrigger>
-              <TabsTrigger value="improvements">Improvements</TabsTrigger>
-              <TabsTrigger value="impact">Student Impact</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="insights" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <FileText className="h-5 w-5 mr-2 text-blue-600" />
-                      Key Topics Detected
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {analysisResults.keyTopics.map((topic, index) => (
-                        <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700">
-                          {topic}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Target className="h-5 w-5 mr-2 text-purple-600" />
-                      Content Metadata
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Estimated Time:</span>
-                      <span className="font-medium">{analysisResults.estimatedTime}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Difficulty Level:</span>
-                      <Badge variant="secondary">{analysisResults.difficulty}</Badge>
-                    </div>
-                    <div>
-                      <span className="text-gray-600 block mb-2">Prerequisites:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {analysisResults.prerequisites.map((prereq, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {prereq}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="strengths" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
-                    Content Strengths
-                  </CardTitle>
-                  <CardDescription>
-                    Areas where your content excels and provides excellent learning value
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
+                  Content Strengths
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {analysisResults.strengths.length === 0 ? (
+                  <p className="text-sm text-gray-500">No strengths detected.</p>
+                ) : (
                   <div className="space-y-3">
-                    {analysisResults.strengths.map((strength, index) => (
+                    {analysisResults.strengths.map((strength: string, index: number) => (
                       <div key={index} className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                         <p className="text-green-800">{strength}</p>
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                )}
+              </CardContent>
+            </Card>
 
-            <TabsContent value="improvements" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <AlertCircle className="h-5 w-5 mr-2 text-orange-600" />
-                      Areas for Improvement
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {analysisResults.weaknesses.map((weakness, index) => (
-                        <div key={index} className="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
-                          <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-orange-800">{weakness}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Lightbulb className="h-5 w-5 mr-2 text-yellow-600" />
-                      AI Recommendations
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {analysisResults.improvements.map((improvement, index) => (
-                        <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
-                          <Lightbulb className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-yellow-800">{improvement}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="impact" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Users className="h-5 w-5 mr-2 text-blue-600" />
-                    Predicted Student Impact
-                  </CardTitle>
-                  <CardDescription>
-                    How this content will likely perform with different student groups
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-blue-900 mb-2">Beginner Students</h4>
-                        <Progress value={analysisResults.studentImpact.beginnerFriendly} className="mb-2" />
-                        <p className="text-sm text-blue-700">
-                          Content is well-structured for newcomers with clear explanations and examples.
-                        </p>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <AlertCircle className="h-5 w-5 mr-2 text-orange-600" />
+                  Areas for Improvement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {analysisResults.weaknesses.length === 0 ? (
+                  <p className="text-sm text-gray-500">No specific weaknesses detected.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {analysisResults.weaknesses.map((weakness: string, index: number) => (
+                      <div key={index} className="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
+                        <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-orange-800">{weakness}</p>
                       </div>
-                      
-                      <div className="bg-purple-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-purple-900 mb-2">Advanced Students</h4>
-                        <Progress value={75} className="mb-2" />
-                        <p className="text-sm text-purple-700">
-                          May need additional advanced topics and edge cases to fully engage experienced learners.
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-green-900 mb-2">Practical Application</h4>
-                        <Progress value={analysisResults.studentImpact.practicalApplication} className="mb-2" />
-                        <p className="text-sm text-green-700">
-                          Students will be able to apply concepts immediately in real-world scenarios.
-                        </p>
-                      </div>
-                      
-                      <div className="bg-teal-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-teal-900 mb-2">Knowledge Retention</h4>
-                        <Progress value={88} className="mb-2" />
-                        <p className="text-sm text-teal-700">
-                          Strong foundation with examples should lead to good long-term retention.
-                        </p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* AI Content Recreation Section */}
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <div className="h-10 w-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mr-3">
-                  <Wand2 className="h-5 w-5 text-white" />
-                </div>
-                AI Content Recreation
-              </CardTitle>
-              <CardDescription>
-                Let AI recreate and enhance your content based on the analysis insights
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Button
-                  onClick={() => handleContentRecreation('enhanced')}
-                  disabled={isRecreating}
-                  variant="outline"
-                  className="h-20 flex-col space-y-2 border-2 border-dashed border-purple-300 hover:border-purple-500 hover:bg-purple-50"
-                >
-                  <Sparkles className="h-5 w-5 text-purple-600" />
-                  <span className="text-sm font-medium">Enhanced Version</span>
-                </Button>
-                
-                <Button
-                  onClick={() => handleContentRecreation('comprehensive')}
-                  disabled={isRecreating}
-                  variant="outline"
-                  className="h-20 flex-col space-y-2 border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50"
-                >
-                  <BookOpen className="h-5 w-5 text-blue-600" />
-                  <span className="text-sm font-medium">Comprehensive Course</span>
-                </Button>
-                
-                <Button
-                  onClick={() => handleContentRecreation('targeted')}
-                  disabled={isRecreating}
-                  variant="outline"
-                  className="h-20 flex-col space-y-2 border-2 border-dashed border-green-300 hover:border-green-500 hover:bg-green-50"
-                >
-                  <Target className="h-5 w-5 text-green-600" />
-                  <span className="text-sm font-medium">Targeted Versions</span>
-                </Button>
-                
-                <Button
-                  onClick={() => handleContentRecreation('multimodal')}
-                  disabled={isRecreating}
-                  variant="outline"
-                  className="h-20 flex-col space-y-2 border-2 border-dashed border-orange-300 hover:border-orange-500 hover:bg-orange-50"
-                >
-                  <PlusCircle className="h-5 w-5 text-orange-600" />
-                  <span className="text-sm font-medium">Multimodal Content</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Lightbulb className="h-5 w-5 mr-2 text-yellow-600" />
+                  AI Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {analysisResults.improvements.length === 0 ? (
+                  <p className="text-sm text-gray-500">No recommendations generated.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {analysisResults.improvements.map((improvement: string, index: number) => (
+                      <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
+                        <Lightbulb className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-yellow-800">{improvement}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-4">
-            <Button className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700">
-              Generate Quiz from Content
-            </Button>
-            <Button variant="outline">
-              Create Teacher Plan
-            </Button>
-            <Button variant="outline">
-              Download Report
-            </Button>
-            <Button variant="outline">
-              Save Analysis
-            </Button>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Sparkles className="h-5 w-5 mr-2 text-blue-600" />
+                  Learning Objectives
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {analysisResults.learningObjectives.length === 0 ? (
+                  <p className="text-sm text-gray-500">No learning objectives suggested.</p>
+                ) : (
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    {analysisResults.learningObjectives.map((objective: string, index: number) => (
+                      <li key={index} className="flex items-start space-x-2">
+                        <ArrowRight className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <span>{objective}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}
 
-      {/* Content Recreation Loading */}
-      {isRecreating && (
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50">
-          <CardContent className="p-12">
-            <div className="text-center">
-              <div className="relative mb-8">
-                <div className="animate-spin h-16 w-16 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Wand2 className="h-6 w-6 text-purple-600 animate-pulse" />
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
-                AI is recreating your content...
-              </h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Generating enhanced content with improved structure, interactivity, and learning outcomes
-              </p>
-              
-              <div className="flex justify-center space-x-8 text-sm text-gray-500">
-                <div className="flex items-center">
-                  <div className="h-2 w-2 bg-purple-600 rounded-full animate-pulse mr-2"></div>
-                  Enhancing content structure
-                </div>
-                <div className="flex items-center">
-                  <div className="h-2 w-2 bg-pink-600 rounded-full animate-pulse mr-2"></div>
-                  Adding interactive elements
-                </div>
-                <div className="flex items-center">
-                  <div className="h-2 w-2 bg-indigo-600 rounded-full animate-pulse mr-2"></div>
-                  Optimizing for engagement
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recreated Content Results */}
       {recreatedContent && !isRecreating && (
         <div className="space-y-6">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-pink-50">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center">
-                  <Wand2 className="h-6 w-6 mr-3 text-purple-600" />
+                  <Sparkles className="h-6 w-6 mr-3 text-purple-600" />
                   AI-Generated Content
                 </span>
                 <Badge variant="secondary" className="bg-purple-100 text-purple-700">
-                  {recreationType} Version
+                  Enhanced Content
                 </Badge>
               </CardTitle>
               <CardDescription>
-                Your content has been recreated and enhanced using advanced AI
+                {t('contentAnalysis.recreatedContentDesc')}
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Tabs value={activeRecreationTab} onValueChange={setActiveRecreationTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="features">Features</TabsTrigger>
-              <TabsTrigger value="export">Export</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-4">
-              {recreationType === 'enhanced' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Sparkles className="h-5 w-5 mr-2 text-purple-600" />
-                      Enhanced Content Overview
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">{recreatedContent.enhanced.title}</h3>
-                        <p className="text-gray-600">Your content has been enhanced with interactive elements, visual aids, and improved structure.</p>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Sparkles className="h-5 w-5 mr-2 text-purple-600" />
+                Suggested Course Structure
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {recreatedContent.sections?.length ? (
+                recreatedContent.sections.map((section: any, index: number) => (
+                  <div key={index} className="border rounded-xl p-6 bg-white shadow-sm">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <h3 className="text-lg font-semibold text-purple-900 flex-1">
+                        {section.title || `Section ${index + 1}`}
+                      </h3>
+                      <Badge variant="outline" className="text-xs uppercase">
+                        {section.type || 'text'}
+                      </Badge>
+                      {section.component && (
+                        <Badge variant="secondary" className="text-xs uppercase">
+                          {section.component}
+                        </Badge>
+                      )}
+                    </div>
+                    {section.content && (
+                      <div className="space-y-3 text-sm text-gray-700 whitespace-pre-wrap">
+                        {section.content}
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-green-50 p-4 rounded-lg">
-                          <h4 className="font-medium text-green-900 mb-2">Key Improvements</h4>
-                          <ul className="space-y-1 text-sm text-green-700">
-                            {recreatedContent.enhanced.improvements.map((improvement, index) => (
-                              <li key={index} className="flex items-start">
-                                <CheckCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-                                {improvement}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <h4 className="font-medium text-blue-900 mb-2">Content Sections</h4>
-                          <div className="space-y-2">
-                            {recreatedContent.enhanced.sections.map((section, index) => (
-                              <div key={index} className="flex items-center justify-between text-sm">
-                                <span className="text-blue-700">{section.title}</span>
-                                <Badge variant="outline" className="text-xs">
-                                  {section.type}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {recreationType === 'comprehensive' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <BookOpen className="h-5 w-5 mr-2 text-blue-600" />
-                      Comprehensive Course Structure
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">{recreatedContent.comprehensive.title}</h3>
-                        <p className="text-gray-600">A complete course curriculum with multiple modules and comprehensive coverage.</p>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                          <h4 className="font-medium mb-3">Course Modules</h4>
-                          <div className="space-y-3">
-                            {recreatedContent.comprehensive.sections.map((module, index) => (
-                              <div key={index} className="bg-blue-50 p-3 rounded-lg">
-                                <div className="flex justify-between items-start mb-1">
-                                  <h5 className="font-medium text-blue-900">{module.title}</h5>
-                                  <Badge variant="outline" className="text-xs">{module.duration}</Badge>
-                                </div>
-                                <p className="text-sm text-blue-700">{module.lessons} lessons</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium mb-3">Course Features</h4>
-                          <div className="space-y-2">
-                            {recreatedContent.comprehensive.features.map((feature, index) => (
-                              <div key={index} className="flex items-start">
-                                <CheckCircle className="h-4 w-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                                <span className="text-sm text-gray-700">{feature}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {recreationType === 'targeted' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Target className="h-5 w-5 mr-2 text-green-600" />
-                      Targeted Learning Paths
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {Object.entries(recreatedContent.targeted).map(([level, content]) => (
-                        <div key={level} className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-lg border">
-                          <div className="flex items-center mb-3">
-                            <div className={`h-3 w-3 rounded-full mr-2 ${
-                              level === 'beginners' ? 'bg-green-500' : 
-                              level === 'intermediate' ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}></div>
-                            <h4 className="font-medium capitalize">{level}</h4>
-                          </div>
-                          <h5 className="font-semibold text-sm mb-2">{content.title}</h5>
-                          <p className="text-xs text-gray-600 mb-3">{content.focus}</p>
-                          <div className="space-y-1">
-                            {content.features.map((feature, index) => (
-                              <div key={index} className="flex items-center text-xs">
-                                <ArrowRight className="h-3 w-3 mr-1 text-gray-400" />
-                                {feature}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {recreationType === 'multimodal' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <PlusCircle className="h-5 w-5 mr-2 text-orange-600" />
-                      Multimodal Learning Experience
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                      {Object.entries(recreatedContent.multimodal).map(([type, description]) => (
-                        <div key={type} className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-lg border border-orange-200">
-                          <div className="text-center">
-                            <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                              {type === 'text' && <FileText className="h-6 w-6 text-orange-600" />}
-                              {type === 'video' && <Upload className="h-6 w-6 text-orange-600" />}
-                              {type === 'interactive' && <Brain className="h-6 w-6 text-orange-600" />}
-                              {type === 'quizzes' && <CheckCircle className="h-6 w-6 text-orange-600" />}
-                              {type === 'projects' && <Target className="h-6 w-6 text-orange-600" />}
-                            </div>
-                            <h4 className="font-medium text-orange-900 capitalize mb-2">{type}</h4>
-                            <p className="text-xs text-orange-700">{description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            <TabsContent value="content" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Generated Content Preview</CardTitle>
-                  <CardDescription>Preview of the AI-generated content structure and sections</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
-                    <div className="text-center text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Content Preview</h3>
-                      <p className="text-sm">
-                        Full content preview will be available after export. 
-                        The AI has generated comprehensive content based on your analysis.
-                      </p>
-                    </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No enhanced sections returned.</p>
+              )}
+            </CardContent>
+          </Card>
 
-            <TabsContent value="features" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Enhancement Features</CardTitle>
-                  <CardDescription>Advanced features added to improve learning outcomes</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <Brain className="h-8 w-8 text-blue-600 mb-3" />
-                      <h4 className="font-medium text-blue-900 mb-2">Interactive Elements</h4>
-                      <p className="text-sm text-blue-700">Code sandboxes, live demos, and interactive examples</p>
-                    </div>
-                    
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <Target className="h-8 w-8 text-green-600 mb-3" />
-                      <h4 className="font-medium text-green-900 mb-2">Adaptive Learning</h4>
-                      <p className="text-sm text-green-700">Content adapts to different skill levels and learning preferences</p>
-                    </div>
-                    
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <Sparkles className="h-8 w-8 text-purple-600 mb-3" />
-                      <h4 className="font-medium text-purple-900 mb-2">Visual Enhancements</h4>
-                      <p className="text-sm text-purple-700">Diagrams, animations, and visual learning aids</p>
-                    </div>
-                    
-                    <div className="bg-orange-50 p-4 rounded-lg">
-                      <CheckCircle className="h-8 w-8 text-orange-600 mb-3" />
-                      <h4 className="font-medium text-orange-900 mb-2">Assessment Integration</h4>
-                      <p className="text-sm text-orange-700">Embedded quizzes and progress tracking</p>
-                    </div>
-                    
-                    <div className="bg-pink-50 p-4 rounded-lg">
-                      <Users className="h-8 w-8 text-pink-600 mb-3" />
-                      <h4 className="font-medium text-pink-900 mb-2">Collaboration Tools</h4>
-                      <p className="text-sm text-pink-700">Discussion forums and peer learning features</p>
-                    </div>
-                    
-                    <div className="bg-teal-50 p-4 rounded-lg">
-                      <RefreshCw className="h-8 w-8 text-teal-600 mb-3" />
-                      <h4 className="font-medium text-teal-900 mb-2">Continuous Updates</h4>
-                      <p className="text-sm text-teal-700">Content automatically updates with latest best practices</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
+                  Improvements Suggested
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recreatedContent.improvements?.length ? (
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    {recreatedContent.improvements.map((item: string, index: number) => (
+                      <li key={index} className="flex items-start space-x-2">
+                        <ArrowRight className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500">No improvements provided.</p>
+                )}
+              </CardContent>
+            </Card>
 
-            <TabsContent value="export" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Export Your Enhanced Content</CardTitle>
-                  <CardDescription>Choose your preferred format to export the AI-generated content</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <Button variant="outline" className="h-20 flex-col space-y-2">
-                      <FileText className="h-6 w-6" />
-                      <span className="text-sm">PDF Document</span>
-                    </Button>
-                    
-                    <Button variant="outline" className="h-20 flex-col space-y-2">
-                      <BookOpen className="h-6 w-6" />
-                      <span className="text-sm">Interactive Course</span>
-                    </Button>
-                    
-                    <Button variant="outline" className="h-20 flex-col space-y-2">
-                      <Upload className="h-6 w-6" />
-                      <span className="text-sm">LMS Package</span>
-                    </Button>
-                    
-                    <Button variant="outline" className="h-20 flex-col space-y-2">
-                      <Copy className="h-6 w-6" />
-                      <span className="text-sm">Copy Content</span>
-                    </Button>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-3">
-                    <Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Enhanced Content
-                    </Button>
-                    <Button variant="outline">
-                      <Edit3 className="h-4 w-4 mr-2" />
-                      Continue Editing
-                    </Button>
-                    <Button variant="outline">
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Regenerate with Changes
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Sparkles className="h-5 w-5 mr-2 text-orange-600" />
+                  Feature Ideas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recreatedContent.addedFeatures?.length ? (
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    {recreatedContent.addedFeatures.map((item: string, index: number) => (
+                      <li key={index} className="flex items-start space-x-2">
+                        <ArrowRight className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500">No additional features were suggested.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
+
+      {teachingPlanResult && !isGeneratingPlan && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <BookOpen className="h-5 w-5 mr-2 text-teal-600" />
+              Teaching Plan
+            </CardTitle>
+            <CardDescription>{t('contentAnalysis.teachingPlanDesc')}</CardDescription>
+
+
+          </CardHeader>
+          <CardContent className="prose prose-sm max-w-none text-gray-700">
+            {typeof teachingPlanResult === 'string' ? (
+              <pre className="whitespace-pre-wrap text-sm">{teachingPlanResult}</pre>
+            ) : teachingPlanResult.markdown ? (
+              <pre className="whitespace-pre-wrap text-sm">{teachingPlanResult.markdown}</pre>
+            ) : (
+              <pre className="bg-gray-900 text-gray-100 text-xs p-4 rounded-lg overflow-auto">
+                {JSON.stringify(teachingPlanResult, null, 2)}
+              </pre>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {isGeneratingPlan && (
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-teal-50 via-blue-50 to-purple-50">
+          <CardContent className="p-10 text-center space-y-4">
+            <div className="relative mx-auto h-16 w-16">
+              <div className="animate-spin h-16 w-16 border-4 border-teal-200 border-t-teal-600 rounded-full"></div>
+              <BookOpen className="absolute inset-0 m-auto h-6 w-6 text-teal-600 animate-pulse" />
+            </div>
+            <h3 className="text-xl font-semibold text-teal-700">Generating teaching plan...</h3>
+            <p className="text-sm text-gray-600 max-w-md mx-auto">
+              Structuring sessions, learning objectives, and recommended activities based on your content.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {(analysisResults || recreatedContent || teachingPlanResult) && (
+        <div className="flex flex-wrap gap-3">
+          {analysisResults && (
+            <Button variant="outline" onClick={() => downloadJson(`analysis-${Date.now()}.json`, analysisResults)}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Analysis
+            </Button>
+          )}
+          {recreatedContent && (
+            <Button
+              variant="outline"
+              onClick={() => downloadJson(`enhanced-content-${Date.now()}.json`, recreatedContent)}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download Enhanced Content
+            </Button>
+          )}
+          {teachingPlanResult && (
+            <Button
+              variant="outline"
+              onClick={() => downloadJson(`teaching-plan-${Date.now()}.json`, teachingPlanResult)}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download Teaching Plan
+            </Button>
+          )}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center">
+              <Clock className="h-5 w-5 mr-2 text-gray-600" />
+              AI History
+            </CardTitle>
+            <CardDescription>{t('contentAnalysis.historyDesc')}</CardDescription>
+
+
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchHistory} disabled={historyLoading}>
+            {historyLoading ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {historyError && <p className="text-sm text-red-500 mb-3">{historyError}</p>}
+          {historyLoading && historyEntries.length === 0 ? (
+            <p className="text-sm text-gray-500">Loading history…</p>
+          ) : historyEntries.length === 0 ? (
+            <p className="text-sm text-gray-500">No AI history recorded yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {historyEntries.map((entry) => (
+                <div key={entry.id} className="border rounded-xl p-4 bg-white shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{formatHistoryType(entry.type)}</p>
+                      <p className="text-xs text-gray-500">
+                        {formatDateTime(entry.createdAt)} · {(entry.language || 'en').toUpperCase()}
+                      </p>
+                      {entry.creditsUsed !== undefined && (
+                        <p className="text-xs text-gray-400">Credits used: {entry.creditsUsed}</p>
+                      )}
+                      {entry.payload?.resource?.resourceTitle && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {entry.payload.resource.courseTitle || 'Course'} · {entry.payload.resource.lessonTitle || 'Lesson'} · {entry.payload.resource.resourceTitle}
+                        </p>
+                      )}
+                      {typeof entry.payload?.sessionMinutes === 'number' && (
+                        <p className="text-xs text-gray-500">
+                          Session: {entry.payload.sessionMinutes} minutes
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleLoadHistory(entry)}>
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => downloadJson(`history-${entry.id}.json`, entry)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

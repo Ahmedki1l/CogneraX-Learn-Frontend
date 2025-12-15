@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Course {
   id: string;
@@ -45,6 +46,7 @@ interface MyCoursesProps {
 }
 
 export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCoursesProps) {
+  const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -173,11 +175,11 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-100 text-green-800 border-green-200">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-800 border-green-200">{t('myCourses.status.completed')}</Badge>;
       case 'overdue':
-        return <Badge className="bg-red-100 text-red-800 border-red-200">Overdue</Badge>;
+        return <Badge className="bg-red-100 text-red-800 border-red-200">{t('myCourses.status.overdue')}</Badge>;
       default:
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Active</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">{t('myCourses.status.active')}</Badge>;
     }
   };
 
@@ -186,7 +188,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading courses...</p>
+          <p className="text-gray-600">{t('myCourses.loadingCourses')}</p>
         </div>
       </div>
     );
@@ -196,10 +198,10 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
     return (
       <div className="text-center py-12">
         <div className="text-red-400 mx-auto mb-4">⚠️</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Courses</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('myCourses.errorLoading')}</h3>
         <p className="text-gray-500 mb-4">{error}</p>
         <Button onClick={() => window.location.reload()}>
-          Try Again
+          {t('myCourses.tryAgain')}
         </Button>
       </div>
     );
@@ -215,10 +217,10 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
             <Button
               variant="outline"
               onClick={handleBackToCourses}
-              className="flex items-center gap-2 mb-4"
+              className={`flex items-center gap-2 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back to My Courses
+              <ArrowLeft className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
+              {t('myCourses.backToCourses')}
             </Button>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
               {selectedCourse.title}
@@ -262,13 +264,13 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Progress</span>
+                  <span className="text-gray-600">{t('myCourses.progress')}</span>
                   <span className="font-medium">{selectedCourse.progress || 0}%</span>
                 </div>
                 <Progress value={selectedCourse.progress || 0} className="h-2" />
                 <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>{selectedCourse.completedLessons || 0}/{selectedCourse.totalLessons || 0} lessons completed</span>
-                  <span>Last accessed {selectedCourse.lastAccessed || 'Recently'}</span>
+                  <span>{selectedCourse.completedLessons || 0}/{selectedCourse.totalLessons || 0} {t('myCourses.lessonsCompleted')}</span>
+                  <span>{t('myCourses.lastAccessed')} {selectedCourse.lastAccessed || 'Recently'}</span>
                 </div>
               </div>
             </div>
@@ -277,17 +279,17 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
 
         {/* Lessons Section */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Lessons</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('myCourses.lessonsTitle')}</h2>
           {loadingLessons ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading lessons...</p>
+              <p className="text-gray-600">{t('myCourses.loadingLessons')}</p>
             </div>
           ) : courseLessons.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No lessons found</h3>
-              <p className="text-gray-600">This course doesn't have any lessons yet.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('myCourses.noLessons')}</h3>
+              <p className="text-gray-600">{t('myCourses.noLessonsDesc')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -306,7 +308,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                           </div>
                           {lesson.isPreview && (
                             <Badge variant="outline" className="bg-yellow-50 text-yellow-800">
-                              Preview
+                              {t('myCourses.preview')}
                             </Badge>
                           )}
                         </div>
@@ -314,7 +316,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                           {lesson.title || lesson.name || `Lesson ${index + 1}`}
                         </CardTitle>
                         <CardDescription className="line-clamp-2 mt-2">
-                          {lesson.description || 'No description'}
+                          {lesson.description || t('myCourses.noDescription')}
                         </CardDescription>
                       </div>
                     </div>
@@ -327,7 +329,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                       </span>
                       <span className="flex items-center gap-1">
                         <Video className="h-4 w-4" />
-                        {lesson.hasVideo ? 'Video' : 'Text'}
+                        {lesson.hasVideo ? t('myCourses.video') : t('myCourses.text')}
                       </span>
                     </div>
                   </CardContent>
@@ -342,15 +344,15 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
 
   // Courses List View (Default)
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
-            My Courses
+            {t('myCourses.title')}
           </h1>
           <p className="text-gray-600 mt-2">
-            Track your learning progress and continue your educational journey
+            {t('myCourses.subtitle')}
           </p>
         </div>
       </div>
@@ -361,7 +363,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Enrolled Courses</p>
+                <p className="text-sm font-medium text-gray-600">{t('myCourses.enrolledCourses')}</p>
                 <p className="text-2xl font-bold text-gray-900">{enrolledCourses.length}</p>
               </div>
               <BookOpen className="h-8 w-8 text-blue-500" />
@@ -373,7 +375,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Courses</p>
+                <p className="text-sm font-medium text-gray-600">{t('myCourses.activeCourses')}</p>
                 <p className="text-2xl font-bold text-gray-900">{activeCoursesCount}</p>
               </div>
               <PlayCircle className="h-8 w-8 text-green-500" />
@@ -385,7 +387,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-sm font-medium text-gray-600">{t('myCourses.completed')}</p>
                 <p className="text-2xl font-bold text-gray-900">{completedCoursesCount}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-purple-500" />
@@ -397,7 +399,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg. Progress</p>
+                <p className="text-sm font-medium text-gray-600">{t('myCourses.avgProgress')}</p>
                 <p className="text-2xl font-bold text-gray-900">{averageProgress}%</p>
               </div>
               <TrendingUp className="h-8 w-8 text-orange-500" />
@@ -409,10 +411,10 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
       {/* Course Tabs */}
       <Tabs defaultValue="all" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">All Courses</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="overdue">Overdue</TabsTrigger>
+          <TabsTrigger value="all">{t('myCourses.tabs.all')}</TabsTrigger>
+          <TabsTrigger value="active">{t('myCourses.tabs.active')}</TabsTrigger>
+          <TabsTrigger value="completed">{t('myCourses.tabs.completed')}</TabsTrigger>
+          <TabsTrigger value="overdue">{t('myCourses.tabs.overdue')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
@@ -452,13 +454,13 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                   {/* Progress */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Progress</span>
+                      <span className="text-gray-600">{t('myCourses.progress')}</span>
                       <span className="font-medium">{course.progress}%</span>
                     </div>
                     <Progress value={course.progress} className="h-2" />
                     <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{course.completedLessons}/{course.totalLessons} lessons</span>
-                      <span>Last accessed {course.lastAccessed}</span>
+                      <span>{course.completedLessons}/{course.totalLessons} {t('myCourses.lessons')}</span>
+                      <span>{t('myCourses.lastAccessed')} {course.lastAccessed}</span>
                     </div>
                   </div>
 
@@ -466,13 +468,13 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                   {course.status !== 'completed' ? (
                     <div className="flex items-center gap-2 text-sm">
                       <Video className="h-4 w-4 text-blue-500" />
-                      <span className="text-gray-600">Next:</span>
+                      <span className="text-gray-600">{t('myCourses.next')}</span>
                       <span className="font-medium">{course.nextLesson}</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-sm">
                       <Award className="h-4 w-4 text-yellow-500" />
-                      <span className="text-gray-600">Final Grade:</span>
+                      <span className="text-gray-600">{t('myCourses.finalGrade')}:</span>
                       <span className="font-bold text-green-600">{course.grade}%</span>
                     </div>
                   )}
@@ -481,7 +483,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                   {course.dueDate && course.status !== 'completed' && (
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4 text-orange-500" />
-                      <span className="text-gray-600">Due:</span>
+                      <span className="text-gray-600">{t('myCourses.due')}</span>
                       <span className={`font-medium ${course.status === 'overdue' ? 'text-red-600' : 'text-gray-900'}`}>
                         {course.dueDate}
                       </span>
@@ -495,11 +497,11 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                     className="w-full bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700 text-white"
                   >
                     {loading ? (
-                      'Loading...'
+                      t('common.loading')
                     ) : course.status === 'completed' ? (
-                      'Review Course'
+                      t('myCourses.reviewCourse')
                     ) : (
-                      'Continue Learning'
+                      t('myCourses.continueLearning')
                     )}
                   </Button>
                 </CardContent>
@@ -534,7 +536,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Progress</span>
+                      <span className="text-gray-600">{t('myCourses.progress')}</span>
                       <span className="font-medium">{course.progress}%</span>
                     </div>
                     <Progress value={course.progress} className="h-2" />
@@ -544,7 +546,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                     disabled={loading}
                     className="w-full bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700 text-white"
                   >
-                    Continue Learning
+                    {t('myCourses.continueLearning')}
                   </Button>
                 </CardContent>
               </Card>
@@ -574,11 +576,11 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                 <CardContent>
                   <div className="flex items-center gap-2 text-sm mb-4">
                     <Award className="h-4 w-4 text-yellow-500" />
-                    <span className="text-gray-600">Final Grade:</span>
+                    <span className="text-gray-600">{t('myCourses.finalGrade')}:</span>
                     <span className="font-bold text-green-600">{course.grade}%</span>
                   </div>
                   <Button variant="outline" className="w-full">
-                    View Certificate
+                    {t('myCourses.viewCertificate')}
                   </Button>
                 </CardContent>
               </Card>
@@ -609,7 +611,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                   <div className="space-y-2">
                     <Progress value={course.progress} className="h-2" />
                     <div className="text-sm text-red-600 font-medium">
-                      Due date passed: {course.dueDate}
+                      {t('myCourses.dueDatePassed')} {course.dueDate}
                     </div>
                   </div>
                   <Button 
@@ -617,7 +619,7 @@ export function MyCourses({ user, onNavigateToLesson, onNavigateToQuiz }: MyCour
                     disabled={loading}
                     className="w-full bg-red-600 hover:bg-red-700 text-white"
                   >
-                    Catch Up Now
+                    {t('myCourses.catchUpNow')}
                   </Button>
                 </CardContent>
               </Card>

@@ -24,7 +24,9 @@ import {
   ChevronDown,
   Folder,
   FolderOpen,
-  Building2
+  Building2,
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -37,6 +39,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Checkbox } from '../ui/checkbox';
 import { Separator } from '../ui/separator';
+import { api } from '../../services/api';
+import { ErrorBoundary } from '../shared/ErrorBoundary';
+import { formatApiError, getErrorMessage, isRetryableError } from '../../utils/errorHandling';
+import type { CreateQuestionRequest, UpdateQuestionRequest, QuestionBankStats } from '../../interfaces/question.types';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Question {
   id: string;
@@ -46,6 +53,7 @@ interface Question {
   correctAnswer: number | string;
   explanation?: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  points?: number;
   fieldId: string;
   fieldName: string;
   courseId: string;
@@ -74,6 +82,7 @@ interface Field {
 }
 
 export function QuestionBank() {
+  const { t, isRTL } = useLanguage();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [fields, setFields] = useState<Field[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
@@ -94,163 +103,121 @@ export function QuestionBank() {
   const [currentView, setCurrentView] = useState<'hierarchy' | 'list'>('hierarchy');
   const [selectedFieldForView, setSelectedFieldForView] = useState<string | null>(null);
   const [selectedCourseForView, setSelectedCourseForView] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<QuestionBankStats | null>(null);
+  
+  // Form state for Add/Edit Question
+  const [formQuestion, setFormQuestion] = useState('');
+  const [formType, setFormType] = useState<'multiple-choice' | 'true-false' | 'short-answer' | 'essay'>('multiple-choice');
+  const [formOptions, setFormOptions] = useState<string[]>(['', '', '', '']);
+  const [formCorrectAnswer, setFormCorrectAnswer] = useState<number | string>(0);
+  const [formExplanation, setFormExplanation] = useState('');
+  const [formDifficulty, setFormDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [formPoints, setFormPoints] = useState(1);
+  const [formFieldId, setFormFieldId] = useState('');
+  const [formCourseId, setFormCourseId] = useState('');
+  const [formTags, setFormTags] = useState<string[]>([]);
+  const [formTagInput, setFormTagInput] = useState('');
+  const [formSubject, setFormSubject] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mock data for demonstration - organized by Field -> Course -> Questions
+  // Load question bank hierarchy from API
   useEffect(() => {
-    const mockQuestions: Question[] = [
-      {
-        id: '1',
-        question: 'What is the main purpose of React Hooks?',
-        type: 'multiple-choice',
-        options: [
-          'To replace class components entirely',
-          'To add state and lifecycle methods to functional components',
-          'To improve performance',
-          'To handle routing'
-        ],
-        correctAnswer: 1,
-        explanation: 'React Hooks allow you to use state and other React features in functional components without writing a class.',
-        difficulty: 'medium',
-        fieldId: 'cs-001',
-        fieldName: 'Computer Science',
-        courseId: 'cs-react-001',
-        courseName: 'React Fundamentals',
-        source: 'ai-generated',
-        tags: ['hooks', 'state', 'functional-components'],
-        createdAt: '2024-01-15T10:30:00Z',
-        lastModified: '2024-01-15T10:30:00Z',
-        usageCount: 5,
-        isActive: true
-      },
-      {
-        id: '2',
-        question: 'JavaScript is a compiled language.',
-        type: 'true-false',
-        options: ['True', 'False'],
-        correctAnswer: 1,
-        explanation: 'JavaScript is an interpreted language, not a compiled language.',
-        difficulty: 'easy',
-        fieldId: 'cs-001',
-        fieldName: 'Computer Science',
-        courseId: 'cs-js-001',
-        courseName: 'Advanced JavaScript',
-        source: 'manual',
-        tags: ['basics', 'language-features'],
-        createdAt: '2024-01-14T14:20:00Z',
-        lastModified: '2024-01-14T14:20:00Z',
-        usageCount: 12,
-        isActive: true
-      },
-      {
-        id: '3',
-        question: 'Explain the concept of database normalization and its benefits.',
-        type: 'essay',
-        correctAnswer: 'Database normalization is the process of organizing data in a database to reduce redundancy and improve data integrity...',
-        explanation: 'Expected answer should cover: elimination of redundancy, data integrity, reduced storage space, and easier maintenance.',
-        difficulty: 'hard',
-        fieldId: 'cs-001',
-        fieldName: 'Computer Science',
-        courseId: 'cs-db-001',
-        courseName: 'Database Design',
-        source: 'exam',
-        tags: ['normalization', 'database-design', 'theory'],
-        createdAt: '2024-01-13T09:15:00Z',
-        lastModified: '2024-01-13T09:15:00Z',
-        usageCount: 3,
-        isActive: true
-      },
-      {
-        id: '4',
-        question: 'Which method is used to add an element to the end of an array in JavaScript?',
-        type: 'short-answer',
-        correctAnswer: 'push',
-        explanation: 'The push() method adds one or more elements to the end of an array and returns the new length.',
-        difficulty: 'easy',
-        fieldId: 'cs-001',
-        fieldName: 'Computer Science',
-        courseId: 'cs-js-002',
-        courseName: 'JavaScript Basics',
-        source: 'ai-generated',
-        tags: ['arrays', 'methods'],
-        createdAt: '2024-01-12T16:45:00Z',
-        lastModified: '2024-01-12T16:45:00Z',
-        usageCount: 8,
-        isActive: true
-      },
-      {
-        id: '5',
-        question: 'What is the derivative of x²?',
-        type: 'short-answer',
-        correctAnswer: '2x',
-        explanation: 'Using the power rule: d/dx(x^n) = n*x^(n-1), so d/dx(x²) = 2x¹ = 2x',
-        difficulty: 'medium',
-        fieldId: 'math-001',
-        fieldName: 'Mathematics',
-        courseId: 'math-calc-001',
-        courseName: 'Calculus I',
-        source: 'manual',
-        tags: ['derivatives', 'power-rule', 'calculus'],
-        createdAt: '2024-01-11T11:20:00Z',
-        lastModified: '2024-01-11T11:20:00Z',
-        usageCount: 15,
-        isActive: true
-      },
-      {
-        id: '6',
-        question: 'The integral of 1/x dx is:',
-        type: 'multiple-choice',
-        options: ['x²/2', 'ln|x| + C', '1/x²', 'e^x + C'],
-        correctAnswer: 1,
-        explanation: 'The integral of 1/x is the natural logarithm: ∫(1/x)dx = ln|x| + C',
-        difficulty: 'medium',
-        fieldId: 'math-001',
-        fieldName: 'Mathematics',
-        courseId: 'math-calc-001',
-        courseName: 'Calculus I',
-        source: 'ai-generated',
-        tags: ['integration', 'logarithms', 'calculus'],
-        createdAt: '2024-01-10T15:30:00Z',
-        lastModified: '2024-01-10T15:30:00Z',
-        usageCount: 7,
-        isActive: true
+    loadQuestionBank();
+  }, []);
+
+  const loadQuestionBank = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const hierarchy = await api.question.getHierarchy({ includeQuestions: true, depth: 'full' });
+      
+      if (hierarchy?.fields) {
+        
+        // Transform API response to component format
+        const allQuestions: Question[] = [];
+        const transformedFields: Field[] = hierarchy.fields.map((field: any) => {
+          const courses: Course[] = (field.courses || []).map((course: any) => {
+            const courseQuestions: Question[] = (course.questions || []).map((q: any) => ({
+              id: q.id || q._id,
+              question: q.question,
+              type: q.type,
+              options: q.options,
+              correctAnswer: q.correctAnswer,
+              explanation: q.explanation,
+              difficulty: q.difficulty,
+              points: q.points || 1,
+              fieldId: field.id || field._id,
+              fieldName: field.name,
+              courseId: course.id || course._id,
+              courseName: course.name,
+              source: q.source || 'manual',
+              tags: q.tags || [],
+              createdAt: q.createdAt || new Date().toISOString(),
+              lastModified: q.updatedAt || q.lastModified || new Date().toISOString(),
+              usageCount: q.usageCount || 0,
+              isActive: q.isActive !== false
+            }));
+            
+            allQuestions.push(...courseQuestions);
+            
+            return {
+              id: course.id || course._id,
+              name: course.name,
+              fieldId: field.id || field._id,
+              fieldName: field.name,
+              questionCount: course.questionCount || courseQuestions.length
+            };
+          });
+          
+          return {
+            id: field.id || field._id,
+            name: field.name,
+            courses,
+            questionCount: field.questionCount || field.activeQuestionCount || 0
+          };
+        });
+        
+        setFields(transformedFields);
+        setQuestions(allQuestions);
+        setFilteredQuestions(allQuestions.filter(q => q.isActive));
+        
+        // Load statistics
+        loadStatistics();
       }
-    ];
+    } catch (error: any) {
+      console.error('Failed to load question bank:', error);
+      const formattedError = formatApiError(error);
+      setError(formattedError.message);
+      setFields([]);
+      setQuestions([]);
+      setFilteredQuestions([]);
+      toast.error(formattedError.message || t('questionBank.messages.loadError'));
+      setFields([]);
+      setQuestions([]);
+      setFilteredQuestions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    setQuestions(mockQuestions);
-    setFilteredQuestions(mockQuestions);
-
-    // Build field/course hierarchy
-    const fieldMap = new Map<string, Field>();
-    
-    mockQuestions.forEach(question => {
-      if (!fieldMap.has(question.fieldId)) {
-        fieldMap.set(question.fieldId, {
-          id: question.fieldId,
-          name: question.fieldName,
-          courses: [],
-          questionCount: 0
+  const loadStatistics = async () => {
+    try {
+      const statsData = await api.question.getStatistics();
+      if (statsData) {
+        setStats({
+          totalQuestions: statsData.totalQuestions || 0,
+          byType: statsData.byType || {},
+          byDifficulty: statsData.byDifficulty || {},
+          byField: statsData.byField || {}
         });
       }
-      
-      const field = fieldMap.get(question.fieldId)!;
-      field.questionCount++;
-      
-      let course = field.courses.find(c => c.id === question.courseId);
-      if (!course) {
-        course = {
-          id: question.courseId,
-          name: question.courseName,
-          fieldId: question.fieldId,
-          fieldName: question.fieldName,
-          questionCount: 0
-        };
-        field.courses.push(course);
-      }
-      course.questionCount++;
-    });
+    } catch (error: any) {
+      console.error('Failed to load statistics:', error);
+      // Statistics failure is not critical, continue without it
+    }
+  };
 
-    setFields(Array.from(fieldMap.values()));
-  }, []);
 
   // Filter questions based on search and filters
   useEffect(() => {
@@ -293,23 +260,133 @@ export function QuestionBank() {
     }
   };
 
+  const resetForm = () => {
+    setFormQuestion('');
+    setFormType('multiple-choice');
+    setFormOptions(['', '', '', '']);
+    setFormCorrectAnswer(0);
+    setFormExplanation('');
+    setFormDifficulty('medium');
+    setFormPoints(1);
+    setFormFieldId('');
+    setFormCourseId('');
+    setFormTags([]);
+    setFormTagInput('');
+    setFormSubject('');
+  };
+
+  const populateFormForEdit = (question: Question) => {
+    setFormQuestion(question.question);
+    setFormType(question.type);
+    setFormOptions(question.options || ['', '', '', '']);
+    setFormCorrectAnswer(question.correctAnswer);
+    setFormExplanation(question.explanation || '');
+    setFormDifficulty(question.difficulty);
+    setFormPoints(question.points || 1);
+    setFormFieldId(question.fieldId);
+    setFormCourseId(question.courseId);
+    setFormTags(question.tags || []);
+    setFormTagInput('');
+    setFormSubject('');
+  };
+
   const handleEditQuestion = (question: Question) => {
     setEditingQuestion(question);
+    populateFormForEdit(question);
     setShowEditDialog(true);
+  };
+
+  const handleAddTag = () => {
+    if (formTagInput.trim() && !formTags.includes(formTagInput.trim())) {
+      setFormTags([...formTags, formTagInput.trim()]);
+      setFormTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setFormTags(formTags.filter(t => t !== tag));
+  };
+
+  const handleSaveQuestion = async (isEdit: boolean) => {
+    // Validation
+    if (!formQuestion.trim()) {
+      toast.error(t('questionBank.messages.questionRequired'));
+      return;
+    }
+    if (!formFieldId) {
+      toast.error(t('questionBank.messages.fieldRequired'));
+      return;
+    }
+    if (!formCourseId) {
+      toast.error(t('questionBank.messages.courseRequired'));
+      return;
+    }
+    if ((formType === 'multiple-choice' || formType === 'true-false') && !formOptions.filter(o => o.trim()).length) {
+      toast.error(t('questionBank.messages.optionRequired'));
+      return;
+    }
+    if ((formType === 'multiple-choice' || formType === 'true-false') && typeof formCorrectAnswer !== 'number') {
+      toast.error(t('questionBank.messages.answerRequired'));
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      const questionData: CreateQuestionRequest | UpdateQuestionRequest = {
+        question: formQuestion.trim(),
+        type: formType,
+        options: (formType === 'multiple-choice' || formType === 'true-false') ? formOptions.filter(o => o.trim()) : undefined,
+        correctAnswer: formCorrectAnswer,
+        explanation: formExplanation.trim() || undefined,
+        difficulty: formDifficulty,
+        points: formPoints,
+        fieldId: formFieldId,
+        courseId: formCourseId,
+        tags: formTags.length > 0 ? formTags : undefined,
+        subject: formSubject.trim() || undefined,
+        source: 'manual'
+      };
+
+      if (isEdit && editingQuestion) {
+        await api.question.updateQuestion(editingQuestion.id, questionData);
+        toast.success(t('questionBank.messages.updateSuccess'));
+        setShowEditDialog(false);
+      } else {
+        await api.question.createQuestion(questionData as CreateQuestionRequest);
+        toast.success(t('questionBank.messages.createSuccess'));
+        setShowAddDialog(false);
+      }
+
+      // Reload question bank
+      await loadQuestionBank();
+      resetForm();
+    } catch (error: any) {
+      console.error('Failed to save question:', error);
+      const formattedError = formatApiError(error);
+      setError(formattedError.message);
+      toast.error(formattedError.message || t('questionBank.messages.saveError'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteQuestion = async (questionId: string) => {
     try {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setError(null);
+      await api.question.deleteQuestion(questionId, false);
       
-      setQuestions(prev => prev.map(q => 
-        q.id === questionId ? { ...q, isActive: false } : q
-      ));
+      // Reload question bank to reflect changes
+      await loadQuestionBank();
       
-      toast.success('Question moved to archive');
-    } catch (error) {
-      toast.error('Failed to delete question');
+      toast.success(t('questionBank.messages.archiveSuccess'));
+    } catch (error: any) {
+      console.error('Failed to delete question:', error);
+      const formattedError = formatApiError(error);
+      setError(formattedError.message);
+      toast.error(formattedError.message || t('questionBank.messages.deleteError'));
     } finally {
       setIsLoading(false);
     }
@@ -318,21 +395,32 @@ export function QuestionBank() {
   const handleDuplicateQuestion = async (question: Question) => {
     try {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setError(null);
       
-      const duplicatedQuestion: Question = {
-        ...question,
-        id: Date.now().toString(),
+      const questionData: CreateQuestionRequest = {
         question: `${question.question} (Copy)`,
-        createdAt: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        usageCount: 0
+        type: question.type,
+        options: question.options,
+        correctAnswer: question.correctAnswer,
+        explanation: question.explanation,
+        difficulty: question.difficulty,
+        points: question.points || 1,
+        fieldId: question.fieldId,
+        courseId: question.courseId,
+        tags: question.tags,
+        source: 'manual'
       };
       
-      setQuestions(prev => [duplicatedQuestion, ...prev]);
-      toast.success('Question duplicated successfully');
-    } catch (error) {
-      toast.error('Failed to duplicate question');
+      await api.question.createQuestion(questionData);
+      
+      await loadQuestionBank();
+      
+      toast.success(t('questionBank.messages.duplicateSuccess'));
+    } catch (error: any) {
+      console.error('Failed to duplicate question:', error);
+      const formattedError = formatApiError(error);
+      setError(formattedError.message);
+      toast.error(formattedError.message || t('questionBank.messages.duplicateError'));
     } finally {
       setIsLoading(false);
     }
@@ -340,22 +428,26 @@ export function QuestionBank() {
 
   const handleBulkDelete = async () => {
     if (selectedQuestions.length === 0) {
-      toast.error('No questions selected');
+      toast.error(t('questionBank.messages.noSelection'));
       return;
     }
 
     try {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      setError(null);
+      const response = await api.question.bulkDeleteQuestions(selectedQuestions, false);
       
-      setQuestions(prev => prev.map(q => 
-        selectedQuestions.includes(q.id) ? { ...q, isActive: false } : q
-      ));
+      // Reload question bank to reflect changes
+      await loadQuestionBank();
       
       setSelectedQuestions([]);
-      toast.success(`${selectedQuestions.length} questions moved to archive`);
-    } catch (error) {
-      toast.error('Failed to delete selected questions');
+      const deletedCount = response?.data?.deleted || selectedQuestions.length;
+      toast.success(`${deletedCount} ${t('questionBank.messages.bulkArchiveSuccess')}`);
+    } catch (error: any) {
+      console.error('Failed to delete questions:', error);
+      const formattedError = formatApiError(error);
+      setError(formattedError.message);
+      toast.error(formattedError.message || t('questionBank.messages.bulkDeleteError'));
     } finally {
       setIsLoading(false);
     }
@@ -363,19 +455,34 @@ export function QuestionBank() {
 
   const handleExportQuestions = async () => {
     if (selectedQuestions.length === 0) {
-      toast.error('No questions selected for export');
+      toast.error(t('questionBank.messages.noExportSelection'));
       return;
     }
 
     try {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setError(null);
+      const blob = await api.question.exportQuestions({
+        format: 'json',
+        questionIds: selectedQuestions
+      });
       
-      const exportData = questions.filter(q => selectedQuestions.includes(q.id));
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `questions-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
       
-      toast.success(`${selectedQuestions.length} questions exported successfully`);
-    } catch (error) {
-      toast.error('Failed to export questions');
+      toast.success(`${selectedQuestions.length} ${t('questionBank.messages.exportSuccess')}`);
+    } catch (error: any) {
+      console.error('Failed to export questions:', error);
+      const formattedError = formatApiError(error);
+      setError(formattedError.message);
+      toast.error(formattedError.message || t('questionBank.messages.exportError'));
     } finally {
       setIsLoading(false);
     }
@@ -474,13 +581,45 @@ export function QuestionBank() {
     fields.find(f => f.id === selectedField)?.courses || [];
 
   return (
-    <div className="space-y-6">
+    <ErrorBoundary>
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+        {/* Error Display */}
+        {error && (
+          <Card className="bg-red-50 border-red-200">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-red-800">
+                  <AlertCircle className="h-5 w-5" />
+                  <span className="font-medium">{t('questionBank.selector.error')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isRetryableError({ message: error }) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => loadQuestionBank()}
+                      className="text-red-700 border-red-300 hover:bg-red-100"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                      {t('questionBank.selector.retry')}
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={() => setError(null)}>
+                    {t('questionBank.selector.dismiss')}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-sm text-red-700 mt-2">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Question Bank</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('questionBank.title')}</h1>
           <p className="text-gray-600 mt-1">
-            Manage and organize your question library by field and course
+            {t('questionBank.subtitle')}
           </p>
           {getBreadcrumbs().length > 0 && (
             <div className="flex items-center space-x-2 mt-2 text-sm text-gray-500">
@@ -490,7 +629,7 @@ export function QuestionBank() {
                 onClick={() => handleViewChange('hierarchy')}
                 className="p-0 h-auto text-teal-600 hover:text-teal-700"
               >
-                All Fields
+                {t('questionBank.allFields')}
               </Button>
               {getBreadcrumbs().map((breadcrumb, index) => (
                 <React.Fragment key={index}>
@@ -515,7 +654,7 @@ export function QuestionBank() {
               className={currentView === 'hierarchy' ? 'bg-gradient-to-r from-teal-500 to-purple-600' : ''}
             >
               <Building2 className="h-4 w-4 mr-1" />
-              Hierarchy
+              {t('questionBank.hierarchy')}
             </Button>
             <Button
               variant={currentView === 'list' ? 'default' : 'outline'}
@@ -524,12 +663,12 @@ export function QuestionBank() {
               className={currentView === 'list' ? 'bg-gradient-to-r from-teal-500 to-purple-600' : ''}
             >
               <Database className="h-4 w-4 mr-1" />
-              List View
+              {t('questionBank.listView')}
             </Button>
           </div>
           <div className="flex items-center space-x-2">
             <Database className="h-6 w-6 text-teal-600" />
-            <span className="font-medium text-teal-600">{questions.filter(q => q.isActive).length} Questions</span>
+            <span className="font-medium text-teal-600">{questions.filter(q => q.isActive).length} {t('questionBank.questions')}</span>
           </div>
         </div>
       </div>
@@ -541,7 +680,7 @@ export function QuestionBank() {
             <div className="flex items-center">
               <Database className="h-8 w-8 text-blue-600 bg-blue-100 rounded-lg p-2" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Total Questions</p>
+                <p className="text-sm font-medium text-gray-500">{t('questionBank.totalQuestions')}</p>
                 <p className="text-2xl font-bold text-gray-900">{questions.filter(q => q.isActive).length}</p>
               </div>
             </div>
@@ -553,7 +692,7 @@ export function QuestionBank() {
             <div className="flex items-center">
               <Brain className="h-8 w-8 text-purple-600 bg-purple-100 rounded-lg p-2" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">AI Generated</p>
+                <p className="text-sm font-medium text-gray-500">{t('questionBank.aiGenerated')}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {questions.filter(q => q.source === 'ai-generated' && q.isActive).length}
                 </p>
@@ -567,7 +706,7 @@ export function QuestionBank() {
             <div className="flex items-center">
               <BarChart3 className="h-8 w-8 text-teal-600 bg-teal-100 rounded-lg p-2" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Most Used</p>
+                <p className="text-sm font-medium text-gray-500">{t('questionBank.mostUsed')}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {Math.max(...questions.map(q => q.usageCount), 0)}
                 </p>
@@ -581,7 +720,7 @@ export function QuestionBank() {
             <div className="flex items-center">
               <BookOpen className="h-8 w-8 text-green-600 bg-green-100 rounded-lg p-2" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Fields</p>
+                <p className="text-sm font-medium text-gray-500">{t('questionBank.fields')}</p>
                 <p className="text-2xl font-bold text-gray-900">{fields.length}</p>
               </div>
             </div>
@@ -594,7 +733,7 @@ export function QuestionBank() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Search className="h-5 w-5 mr-2 text-blue-600" />
-            Search & Filter
+            {t('questionBank.searchFilter')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -633,7 +772,7 @@ export function QuestionBank() {
               </SelectContent>
             </Select>
             
-            <Select value={selectedField} onValueChange={(value) => {
+            <Select value={selectedField} onValueChange={(value: string) => {
               setSelectedField(value);
               setSelectedCourse('all'); // Reset course when field changes
             }}>
@@ -726,7 +865,7 @@ export function QuestionBank() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Building2 className="h-5 w-5 mr-2 text-teal-600" />
-              Field & Course Hierarchy
+              {t('questionBank.hierarchy.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -759,14 +898,13 @@ export function QuestionBank() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={(e) => {
+                        onClick={(e: React.MouseEvent) => {
                           e.stopPropagation();
                           handleFieldClick(field.id);
                         }}
                         className="text-teal-600 border-teal-300 hover:bg-teal-50"
                       >
-                        <Eye className="h-3 w-3 mr-1" />
-                        View Questions
+                        {t('questionBank.actions.viewQuestions')}
                       </Button>
                     </div>
                   </div>
@@ -794,16 +932,14 @@ export function QuestionBank() {
                                   onClick={() => handleCourseClick(course.id)}
                                   className="text-purple-600 border-purple-300 hover:bg-purple-50"
                                 >
-                                  <Eye className="h-3 w-3 mr-1" />
-                                  View Questions
+                                  {t('questionBank.actions.viewQuestions')}
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   className="text-gray-600"
                                 >
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Add Question
+                                  {t('questionBank.actions.addQuestion')}
                                 </Button>
                               </div>
                             </div>
@@ -818,13 +954,13 @@ export function QuestionBank() {
               {fields.length === 0 && (
                 <div className="text-center py-12">
                   <Building2 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No fields found</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{t('questionBank.empty.noFields')}</h3>
                   <p className="text-gray-500 mb-4">
-                    Start organizing your questions by creating fields and courses
+                    {t('questionBank.empty.noFieldsDesc')}
                   </p>
                   <Button className="bg-gradient-to-r from-teal-500 to-purple-600">
                     <Plus className="h-4 w-4 mr-2" />
-                    Create First Field
+                    {t('questionBank.empty.createField')}
                   </Button>
                 </div>
               )}
@@ -849,25 +985,276 @@ export function QuestionBank() {
                 onClick={handleSelectAll}
                 className="text-gray-600"
               >
-                {selectedQuestions.length === filteredQuestions.length ? 'Deselect All' : 'Select All'}
+                {selectedQuestions.length === filteredQuestions.length ? t('questionBank.selector.deselectAll') : t('questionBank.selector.selectAll')}
               </Button>
-              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <Dialog open={showAddDialog} onOpenChange={(open: boolean) => {
+                setShowAddDialog(open);
+                if (!open) resetForm();
+              }}>
                 <DialogTrigger asChild>
                   <Button size="sm" className="bg-gradient-to-r from-teal-500 to-purple-600">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Question
+                    {t('questionBank.actions.addQuestion')}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Add New Question</DialogTitle>
+                    <DialogTitle>{t('questionBank.form.header')}</DialogTitle>
                     <DialogDescription>
-                      Create a new question to add to your question bank
+                      {t('questionBank.form.description')}
                     </DialogDescription>
                   </DialogHeader>
-                  {/* Add question form would go here */}
-                  <div className="text-center py-8 text-gray-500">
-                    Question creation form coming soon...
+                  <div className="space-y-4 mt-4">
+                    {/* Question Text */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">{t('questionBank.form.questionText')} *</label>
+                      <Textarea
+                        value={formQuestion}
+                        onChange={(e) => setFormQuestion(e.target.value)}
+                        placeholder={t('questionBank.form.questionPlaceholder')}
+                        className="min-h-[100px]"
+                        required
+                      />
+                    </div>
+
+                    {/* Question Type */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">{t('questionBank.form.type')} *</label>
+                      <Select value={formType} onValueChange={(value: any) => {
+                        setFormType(value);
+                        if (value === 'true-false') {
+                          setFormOptions(['True', 'False']);
+                        } else if (value === 'multiple-choice' && formOptions.length < 2) {
+                          setFormOptions(['', '', '', '']);
+                        }
+                      }}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                          <SelectItem value="true-false">True/False</SelectItem>
+                          <SelectItem value="short-answer">Short Answer</SelectItem>
+                          <SelectItem value="essay">Essay</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Options (for multiple-choice and true-false) */}
+                    {(formType === 'multiple-choice' || formType === 'true-false') && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('questionBank.form.options')} *</label>
+                        <div className="space-y-2">
+                          {formOptions.map((option, index) => (
+                            <div key={index} className="flex items-center space-x-2">
+                              <Input
+                                value={option}
+                                onChange={(e) => {
+                                  const newOptions = [...formOptions];
+                                  newOptions[index] = e.target.value;
+                                  setFormOptions(newOptions);
+                                }}
+                                placeholder={`${t('questionBank.form.optionPlaceholder')} ${index + 1}`}
+                                disabled={formType === 'true-false'}
+                              />
+                              {(formType === 'multiple-choice' || formType === 'true-false') && (
+                                <Checkbox
+                                  checked={formCorrectAnswer === index}
+                                  onCheckedChange={(checked: boolean) => {
+                                    if (checked) setFormCorrectAnswer(index);
+                                  }}
+                                />
+                              )}
+                            </div>
+                          ))}
+                          {formType === 'multiple-choice' && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setFormOptions([...formOptions, ''])}
+                              className="w-full"
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              {t('questionBank.form.addOption')}
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">{t('questionBank.form.correctAnswerHint')}</p>
+                      </div>
+                    )}
+
+                    {/* Correct Answer (for short-answer and essay) */}
+                    {(formType === 'short-answer' || formType === 'essay') && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">
+                          {formType === 'short-answer' ? t('questionBank.form.correctAnswer') : t('questionBank.form.sampleAnswer')}
+                        </label>
+                        <Textarea
+                          value={typeof formCorrectAnswer === 'string' ? formCorrectAnswer : ''}
+                          onChange={(e) => setFormCorrectAnswer(e.target.value)}
+                          placeholder={formType === 'short-answer' ? t('questionBank.form.answerPlaceholder') : t('questionBank.form.samplePlaceholder')}
+                          className="min-h-[80px]"
+                        />
+                      </div>
+                    )}
+
+                    {/* Explanation */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">{t('questionBank.form.explanation')}</label>
+                      <Textarea
+                        value={formExplanation}
+                        onChange={(e) => setFormExplanation(e.target.value)}
+                        placeholder={t('questionBank.form.explanationPlaceholder')}
+                        className="min-h-[80px]"
+                      />
+                    </div>
+
+                    {/* Difficulty and Points */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('questionBank.selector.difficulty')} *</label>
+                        <Select value={formDifficulty} onValueChange={(value: any) => setFormDifficulty(value)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="easy">Easy</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="hard">Hard</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('questionBank.form.points')} *</label>
+                        <Input
+                          type="number"
+                          value={formPoints}
+                          onChange={(e) => setFormPoints(parseInt(e.target.value) || 1)}
+                          min="1"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Field and Course */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('courseDiscovery.field')} *</label>
+                        <Select value={formFieldId} onValueChange={(value: string) => {
+                          setFormFieldId(value);
+                          setFormCourseId(''); // Reset course when field changes
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('questionBank.selector.field')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {fields.map(field => (
+                              <SelectItem key={field.id} value={field.id}>{field.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('questionBank.form.course')} *</label>
+                        <Select 
+                          value={formCourseId} 
+                          onValueChange={(value: string) => setFormCourseId(value)}
+                          disabled={!formFieldId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={formFieldId ? t('questionBank.selector.course') : t('questionBank.form.selectFieldFirst')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {formFieldId && fields.find(f => f.id === formFieldId)?.courses.map(course => (
+                              <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">{t('questionBank.form.tags')}</label>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Input
+                          value={formTagInput}
+                          onChange={(e) => setFormTagInput(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTag();
+                            }
+                          }}
+                          placeholder={t('questionBank.form.tagPlaceholder')}
+                        />
+                        <Button type="button" variant="outline" onClick={handleAddTag}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {formTags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {formTags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                              {tag}
+                              <X
+                                className="h-3 w-3 cursor-pointer"
+                                onClick={() => handleRemoveTag(tag)}
+                              />
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Subject */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">Subject</label>
+                      <Input
+                        value={formSubject}
+                        onChange={(e) => setFormSubject(e.target.value)}
+                        placeholder="Optional subject or topic"
+                      />
+                    </div>
+
+                    {/* Error Display */}
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+                        {error}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowAddDialog(false);
+                          resetForm();
+                        }}
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => handleSaveQuestion(false)}
+                        disabled={isSubmitting}
+                        className="bg-gradient-to-r from-teal-500 to-purple-600"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Question
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -880,12 +1267,15 @@ export function QuestionBank() {
               <Database className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No questions found</h3>
               <p className="text-gray-500 mb-4">
-                {searchTerm || selectedDifficulty !== 'all' || selectedType !== 'all' || selectedSubject !== 'all' || selectedSource !== 'all'
+                {searchTerm || selectedDifficulty !== 'all' || selectedType !== 'all' || selectedSource !== 'all'
                   ? 'Try adjusting your search criteria or filters'
                   : 'Start building your question bank by adding your first question'
                 }
               </p>
-              <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-teal-500 to-purple-600">
+              <Button onClick={() => {
+                resetForm();
+                setShowAddDialog(true);
+              }} className="bg-gradient-to-r from-teal-500 to-purple-600">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Your First Question
               </Button>
@@ -909,8 +1299,12 @@ export function QuestionBank() {
                           </p>
                           
                           <div className="flex flex-wrap gap-2 mb-3">
-                            <Badge className={`flex items-center gap-1 ${getDifficultyColor(question.difficulty)}`}>
+                            <Badge className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
                               {getTypeIcon(question.type)}
+                              {question.type.replace('-', ' ')}
+                            </Badge>
+
+                            <Badge className={`flex items-center gap-1 ${getDifficultyColor(question.difficulty)}`}>
                               {question.difficulty}
                             </Badge>
                             
@@ -1090,8 +1484,14 @@ export function QuestionBank() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={showEditDialog} onOpenChange={(open: boolean) => {
+        setShowEditDialog(open);
+        if (!open) {
+          resetForm();
+          setEditingQuestion(null);
+        }
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Question</DialogTitle>
             <DialogDescription>
@@ -1099,12 +1499,263 @@ export function QuestionBank() {
             </DialogDescription>
           </DialogHeader>
           {editingQuestion && (
-            <div className="text-center py-8 text-gray-500">
-              Question editing form coming soon...
+            <div className="space-y-4 mt-4">
+              {/* Question Text */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Question Text *</label>
+                <Textarea
+                  value={formQuestion}
+                  onChange={(e) => setFormQuestion(e.target.value)}
+                  placeholder="Enter your question here..."
+                  className="min-h-[100px]"
+                  required
+                />
+              </div>
+
+              {/* Question Type */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Question Type *</label>
+                <Select value={formType} onValueChange={(value: any) => {
+                  setFormType(value);
+                  if (value === 'true-false') {
+                    setFormOptions(['True', 'False']);
+                  } else if (value === 'multiple-choice' && formOptions.length < 2) {
+                    setFormOptions(['', '', '', '']);
+                  }
+                }}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                    <SelectItem value="true-false">True/False</SelectItem>
+                    <SelectItem value="short-answer">Short Answer</SelectItem>
+                    <SelectItem value="essay">Essay</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Options (for multiple-choice and true-false) */}
+              {(formType === 'multiple-choice' || formType === 'true-false') && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Options *</label>
+                  <div className="space-y-2">
+                    {formOptions.map((option, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <Input
+                          value={option}
+                          onChange={(e) => {
+                            const newOptions = [...formOptions];
+                            newOptions[index] = e.target.value;
+                            setFormOptions(newOptions);
+                          }}
+                          placeholder={`Option ${index + 1}`}
+                          disabled={formType === 'true-false'}
+                        />
+                        {(formType === 'multiple-choice' || formType === 'true-false') && (
+                          <Checkbox
+                            checked={formCorrectAnswer === index}
+                            onCheckedChange={(checked: boolean) => {
+                              if (checked) setFormCorrectAnswer(index);
+                            }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                    {formType === 'multiple-choice' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFormOptions([...formOptions, ''])}
+                        className="w-full"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Option
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Check the box next to the correct answer</p>
+                </div>
+              )}
+
+              {/* Correct Answer (for short-answer and essay) */}
+              {(formType === 'short-answer' || formType === 'essay') && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    {formType === 'short-answer' ? 'Correct Answer' : 'Sample Answer / Rubric'}
+                  </label>
+                  <Textarea
+                    value={typeof formCorrectAnswer === 'string' ? formCorrectAnswer : ''}
+                    onChange={(e) => setFormCorrectAnswer(e.target.value)}
+                    placeholder={formType === 'short-answer' ? 'Enter the correct answer...' : 'Enter sample answer or grading rubric...'}
+                    className="min-h-[80px]"
+                  />
+                </div>
+              )}
+
+              {/* Explanation */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Explanation</label>
+                <Textarea
+                  value={formExplanation}
+                  onChange={(e) => setFormExplanation(e.target.value)}
+                  placeholder="Explain why this is the correct answer..."
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              {/* Difficulty and Points */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Difficulty *</label>
+                  <Select value={formDifficulty} onValueChange={(value: any) => setFormDifficulty(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="easy">Easy</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Points *</label>
+                  <Input
+                    type="number"
+                    value={formPoints}
+                    onChange={(e) => setFormPoints(parseInt(e.target.value) || 1)}
+                    min="1"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Field and Course */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Field *</label>
+                  <Select value={formFieldId} onValueChange={(value: string) => {
+                    setFormFieldId(value);
+                    setFormCourseId(''); // Reset course when field changes
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select field" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fields.map(field => (
+                        <SelectItem key={field.id} value={field.id}>{field.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Course *</label>
+                  <Select 
+                    value={formCourseId} 
+                    onValueChange={(value: string) => setFormCourseId(value)}
+                    disabled={!formFieldId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formFieldId ? "Select course" : "Select field first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {formFieldId && fields.find(f => f.id === formFieldId)?.courses.map(course => (
+                        <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Tags</label>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Input
+                    value={formTagInput}
+                    onChange={(e) => setFormTagInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                    placeholder="Add a tag and press Enter"
+                  />
+                  <Button type="button" variant="outline" onClick={handleAddTag}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {formTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formTags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => handleRemoveTag(tag)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Subject */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Subject</label>
+                <Input
+                  value={formSubject}
+                  onChange={(e) => setFormSubject(e.target.value)}
+                  placeholder="Optional subject or topic"
+                />
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditDialog(false);
+                    resetForm();
+                    setEditingQuestion(null);
+                  }}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleSaveQuestion(true)}
+                  disabled={isSubmitting}
+                  className="bg-gradient-to-r from-teal-500 to-purple-600"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Update Question
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
     </div>
+    </ErrorBoundary>
   );
 }

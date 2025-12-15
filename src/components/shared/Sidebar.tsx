@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -27,10 +27,12 @@ import {
   Brain,
   FileText,
   Sparkles,
-  GraduationCap
+  GraduationCap,
+  Calendar
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../commerce/CartContext';
+import { useAICredits } from '../context/AICreditsContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -45,10 +47,28 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
   const location = useLocation();
   const { t, isRTL } = useLanguage();
   const { getTotalItems } = useCart();
+  const {
+    balance: aiCredits,
+    summary: aiSummary,
+    loading: aiCreditsLoading,
+    error: aiCreditsError,
+    refresh: refreshAICredits,
+  } = useAICredits();
+
+  const shouldShowCredits = user?.role === 'instructor' || user?.role === 'admin';
+  useEffect(() => {
+    if (shouldShowCredits) {
+      void refreshAICredits();
+    }
+  }, [refreshAICredits, shouldShowCredits]);
+
+  const creditsDisplay = aiCreditsLoading
+    ? '...'
+    : aiCredits ?? aiSummary?.available ?? aiSummary?.remaining ?? (shouldShowCredits ? 0 : null);
   const getMenuItems = () => {
     const baseItems = [
       {
-        id: user?.role === 'student' ? 'student-dashboard' : user?.role === 'instructor' ? 'instructor-dashboard' : 'dashboard',
+        id: user?.role === 'student' ? 'student-dashboard' : user?.role === 'instructor' ? 'instructor-dashboard' : user?.role === 'parent' ? 'parent/dashboard' : 'dashboard',
         label: t('nav.dashboard'),
         icon: LayoutDashboard,
         color: 'text-blue-600'
@@ -64,17 +84,23 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
           icon: BrainCircuit,
           color: 'text-purple-600'
         },
+        // {
+        //   id: '/ai-question-generator',
+        //   label: t('nav.quizCreator'),
+        //   icon: Sparkles,
+        //   color: 'text-pink-600'
+        // },
         {
-          id: '/quiz-creator',
-          label: t('nav.quizCreator'),
-          icon: FileQuestion,
-          color: 'text-teal-600'
+          id: '/ai-exam-generator',
+          label: t('nav.examGenerator'),
+          icon: ClipboardCheck,
+          color: 'text-indigo-500'
         },
         {
-          id: '/question-bank',
-          label: t('nav.questionBank'),
-          icon: Database,
-          color: 'text-blue-600'
+          id: '/exams',
+          label: t('nav.gradebook'),
+          icon: FileQuestion,
+          color: 'text-indigo-600'
         },
         {
           id: '/students',
@@ -82,71 +108,47 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
           icon: Users,
           color: 'text-green-600'
         },
+        // {
+        //   id: '/organization',
+        //   label: t('nav.organization'),
+        //   icon: Building2,
+        //   color: 'text-orange-600'
+        // },
         {
-          id: '/organization',
-          label: t('nav.organization'),
-          icon: Building2,
-          color: 'text-indigo-600'
-        },
-        {
-          id: '/platform-analytics',
-          label: t('nav.platformAnalytics') || 'Platform Analytics',
-          icon: TrendingUp,
+          id: '/communication',
+          label: t('nav.communicationHub'),
+          icon: MessageSquare,
           color: 'text-blue-500'
         },
         {
-          id: '/user-access',
-          label: t('nav.userAccessManagement') || 'User & Access Management',
-          icon: Shield,
-          color: 'text-purple-500'
+          id: '/platform-analytics',
+          label: t('nav.platformAnalytics'),
+          icon: BarChart3,
+          color: 'text-cyan-600'
         },
         {
-          id: '/instructor-management',
-          label: 'Instructor Management',
-          icon: GraduationCap,
+          id: '/user-access',
+          label: t('nav.userAccessManagement'),
+          icon: UserCheck,
           color: 'text-teal-600'
         },
-        // {
-        //   id: '/system-admin',
-        //   label: t('nav.systemAdministration') || 'System Administration',
-        //   icon: Activity,
-        //   color: 'text-red-500'
-        // },
-        // {
-        //   id: '/platform-config',
-        //   label: t('nav.platformConfiguration') || 'Platform Configuration',
-        //   icon: Palette,
-        //   color: 'text-teal-500'
-        // },
-        // {
-        //   id: '/ai-tutoring',
-        //   label: t('nav.aiTutoring') || 'AI Tutoring System',
-        //   icon: Brain,
-        //   color: 'text-purple-600'
-        // },
         {
-          id: '/ai-essay-grading',
-          label: t('nav.aiEssayGrading') || 'AI Essay Grading',
-          icon: FileText,
-          color: 'text-blue-600'
-        },
-        // {
-        //   id: '/ai-recommendations',
-        //   label: t('nav.aiRecommendations') || 'AI Recommendations',
-        //   icon: Sparkles,
-        //   color: 'text-teal-600'
-        // },
-        {
-          id: '/ai-credits',
-          label: t('nav.aiCredits') || 'AI Credits Management',
-          icon: Zap,
-          color: 'text-yellow-600'
+          id: '/system-admin',
+          label: t('nav.systemAdministration'),
+          icon: Database,
+          color: 'text-red-600'
         },
         {
-          id: '/settings',
-          label: t('nav.settings'),
+          id: '/platform-config',
+          label: t('nav.platformConfiguration'),
           icon: Settings,
           color: 'text-gray-600'
+        },
+        {
+          id: '/ai-credits',
+          label: t('nav.aiCredits'),
+          icon: Zap,
+          color: 'text-yellow-500'
         }
       ];
     }
@@ -156,143 +158,118 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
         ...baseItems,
         {
           id: '/courses',
-          label: t('nav.courseManagement'),
+          label: t('nav.myCourses'),
           icon: BookOpen,
           color: 'text-purple-600'
         },
         {
-          id: '/instructor-analytics',
-          label: t('nav.instructorAnalytics') || 'Advanced Analytics',
-          icon: BarChart3,
-          color: 'text-teal-600'
-        },
-        {
-          id: '/gradebook',
-          label: t('nav.gradebook') || 'Gradebook & Assessment',
-          icon: UserCheck,
-          color: 'text-blue-600'
-        },
-        {
-          id: '/communication',
-          label: t('nav.communicationHub') || 'Communication Hub',
-          icon: MessageSquare,
-          color: 'text-green-600'
+          id: '/content-analysis',
+          label: t('nav.contentAnalysis'),
+          icon: BrainCircuit,
+          color: 'text-purple-600'
         },
         // {
-        //   id: '/content-authoring',
-        //   label: t('nav.contentAuthoring') || 'Content Authoring',
-        //   icon: Edit,
-        //   color: 'text-purple-600'
+        //   id: '/ai-question-generator',
+        //   label: t('nav.quizCreator'),
+        //   icon: Sparkles,
+        //   color: 'text-pink-600'
         // },
         {
-          id: '/quiz-creator',
-          label: t('nav.quizCreator'),
-          icon: FileQuestion,
-          color: 'text-orange-600'
+          id: '/ai-exam-generator',
+          label: t('nav.examGenerator'),
+          icon: ClipboardCheck,
+          color: 'text-indigo-500'
         },
         {
-          id: '/question-bank',
-          label: t('nav.questionBank'),
-          icon: Database,
+          id: '/exams',
+          label: t('nav.gradebook'),
+          icon: FileQuestion,
           color: 'text-indigo-600'
         },
         {
-          id: '/submissions',
+          id: '/assignments',
+          label: t('nav.assignments'),
+          icon: FileText,
+          color: 'text-orange-500'
+        },
+        {
+          id: '/students',
           label: t('nav.students'),
           icon: Users,
-          color: 'text-pink-600'
+          color: 'text-green-600'
+        },
+        {
+          id: '/communication',
+          label: t('nav.communicationHub'),
+          icon: MessageSquare,
+          color: 'text-blue-500'
         },
         // {
-        //   id: '/ai-tutoring',
-        //   label: t('nav.aiTutoring') || 'AI Tutoring System',
-        //   icon: Brain,
-        //   color: 'text-purple-600'
+        //   id: '/analytics',
+        //   label: t('nav.analytics'),
+        //   icon: BarChart3,
+        //   color: 'text-orange-600'
         // },
-        {
-          id: '/ai-essay-grading',
-          label: t('nav.aiEssayGrading') || 'AI Essay Grading',
-          icon: FileText,
-          color: 'text-blue-600'
-        },
-        // {
-        //   id: '/ai-recommendations',
-        //   label: t('nav.aiRecommendations') || 'AI Recommendations',
-        //   icon: Sparkles,
-        //   color: 'text-teal-600'
-        // },
-        {
-          id: '/settings',
-          label: t('nav.settings'),
-          icon: Settings,
-          color: 'text-gray-600'
-        }
+        // ...(shouldShowCredits ? [{
+        //   id: '/ai-credits',
+        //   label: t('nav.aiCredits'),
+        //   icon: Zap,
+        //   color: 'text-yellow-500'
+        // }] : [])
       ];
     }
 
     // Student menu items
     const studentItems = [
       ...baseItems,
+      // {
+      //   id: '/courses/catalog',
+      //   label: t('nav.courseDiscovery'),
+      //   icon: BookOpen,
+      //   color: 'text-blue-600'
+      // },
       {
         id: '/my-courses',
         label: t('nav.myCourses'),
-        icon: BookOpen,
-        color: 'text-blue-600'
-      },
-      {
-        id: '/course-discovery',
-        label: t('nav.courseDiscovery'),
-        icon: PlusCircle,
-        color: 'text-green-600'
-      },
-      {
-        id: '/cart',
-        label: t('nav.cart') || 'Shopping Cart',
-        icon: ShoppingCart,
-        color: 'text-purple-600',
-        badge: getTotalItems() > 0 ? getTotalItems() : undefined
-      },
-      {
-        id: '/achievements',
-        label: t('nav.achievements'),
-        icon: Award,
-        color: 'text-yellow-600'
-      },
-      {
-        id: '/student-analytics',
-        label: t('nav.analytics') || 'Learning Analytics',
-        icon: BarChart3,
-        color: 'text-teal-600'
-      },
-      {
-        id: '/study-tools',
-        label: t('nav.studyTools') || 'Study Tools',
-        icon: BookOpen,
+        icon: GraduationCap,
         color: 'text-purple-600'
       },
       {
-        id: '/forums',
-        label: t('nav.forums') || 'Discussion Forums',
-        icon: MessageSquare,
-        color: 'text-blue-600'
+        id: '/my-assignments',
+        label: t('nav.assignments'),
+        icon: FileText,
+        color: 'text-orange-500'
       },
       {
-        id: '/certificates',
-        label: t('nav.certificates') || 'Certificates',
-        icon: Award,
-        color: 'text-green-600'
+        id: '/student-analytics',
+        label: t('nav.analytics'),
+        icon: Activity,
+        color: 'text-green-500'
       },
-      // {
-      //   id: '/ai-tutoring',
-      //   label: t('nav.aiTutoring') || 'AI Tutoring System',
-      //   icon: Brain,
-      //   color: 'text-purple-600'
-      // },
-      // {
-      //   id: '/ai-recommendations',
-      //   label: t('nav.aiRecommendations') || 'AI Recommendations',
-      //   icon: Sparkles,
-      //   color: 'text-teal-600'
-      // },
+      /*{
+        id: '/achievements',
+        label: t('nav.achievements'),
+        icon: Award,
+        color: 'text-yellow-500'
+      },*/
+      {
+        id: '/study-tools',
+        label: t('nav.studyTools'),
+        icon: Calendar,
+        color: 'text-pink-500'
+      },
+      {
+        id: '/ai-tutoring',
+        label: t('nav.aiTutoring'),
+        icon: Brain,
+        color: 'text-violet-500'
+      },
+      {
+        id: '/communication',
+        label: t('nav.communicationHub'),
+        icon: MessageSquare,
+        color: 'text-blue-500'
+      },
       {
         id: '/settings',
         label: t('nav.settings'),
@@ -305,7 +282,7 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
     const isSchool = user?.organization?.type === 'school';
     if (isSchool) {
       return studentItems.filter(item => 
-        item.id !== '/course-discovery' && item.id !== '/cart'
+        item.id !== '/courses/catalog' && item.id !== '/cart'
       );
     }
 
@@ -313,6 +290,36 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
   };
 
   const menuItems = getMenuItems();
+
+  // Override menu items for parent role
+  const parentMenuItems = user?.role === 'parent' ? [
+    {
+      id: 'parent/dashboard',
+      label: t('nav.dashboard'),
+      icon: LayoutDashboard,
+      color: 'text-blue-600'
+    },
+    {
+      id: '/parent/dashboard',
+      label: t('nav.myChildren'),
+      icon: Users,
+      color: 'text-purple-600'
+    },
+    {
+      id: '/communication',
+      label: t('nav.communicationHub'),
+      icon: MessageSquare,
+      color: 'text-blue-500'
+    },
+    {
+      id: '/settings',
+      label: t('nav.settings'),
+      icon: Settings,
+      color: 'text-gray-600'
+    }
+  ] : null;
+
+  const finalMenuItems = parentMenuItems || menuItems;
 
   return (
     <>
@@ -327,19 +334,19 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
                 src={logo} 
                 alt="CogneraX" 
               />
-              <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-400 rounded-full border-2 border-white"></div>
+              <div className="absolute -top-1 -right-1 h-3 w-3 bg-zinc-900 rounded-full border-2 border-white"></div>
             </div>
             <div className="ml-3">
-              <h2 className="text-xl font-bold bg-gradient-to-r from-teal-500 to-purple-600 bg-clip-text text-transparent whitespace-nowrap">
-                CogneraX Learn
+              <h2 className="text-xl font-bold bg-gradient-to-r from-zinc-900 to-zinc-600 bg-clip-text text-transparent whitespace-nowrap">
+                {t('sidebar.title')}
               </h2>
-              <p className="text-xs text-gray-500 mt-1">AI-Powered Platform</p>
+              <p className="text-xs text-gray-500 mt-1">{t('sidebar.subtitle')}</p>
             </div>
           </div>
           
           {/* Scrollable Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto scrollbar-hide">
-            {menuItems.map((item) => {
+                        {finalMenuItems.map((item) => {
               const Icon = item.icon;
               return (
                 <button
@@ -350,16 +357,16 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
                   }}
                   className={`w-full group flex items-center px-4 py-3 text-sm rounded-xl transition-all duration-300 relative overflow-hidden ${
                     location.pathname === item.id
-                      ? 'bg-gradient-to-r from-teal-500 to-purple-600 text-white shadow-lg transform scale-105'
-                      : 'text-gray-600 hover:bg-gradient-to-r hover:from-teal-50 hover:to-purple-50 hover:text-gray-900 hover:scale-105'
+                      ? 'bg-gray-900 text-white shadow-lg transform scale-105'
+                      : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 hover:scale-105'
                   }`}
                 >
                   {location.pathname === item.id && (
-                    <div className="absolute inset-0 bg-white opacity-20 rounded-xl"></div>
+                    <div className="absolute inset-0 bg-gray-500/20 rounded-xl"></div>
                   )}
                   <Icon
                     className={`mr-3 h-5 w-5 relative z-10 ${
-                      location.pathname === item.id ? 'text-white' : `${item.color} group-hover:scale-110 transition-transform duration-300`
+                      location.pathname === item.id ? 'text-white' : `text-zinc-500 group-hover:text-zinc-900 group-hover:scale-110 transition-transform duration-300`
                     }`}
                   />
                   <span className="relative z-10 font-medium">{item.label}</span>
@@ -367,8 +374,8 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
                     <div className="ml-auto relative z-10">
                       <div className={`px-2 py-1 text-xs rounded-full ${
                         location.pathname === item.id 
-                          ? 'bg-white text-purple-600' 
-                          : 'bg-gradient-to-r from-teal-500 to-purple-600 text-white'
+                          ? 'bg-white text-black' 
+                          : 'bg-zinc-900 text-white'
                       }`}>
                         {(item as any).badge}
                       </div>
@@ -385,28 +392,31 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 border-t border-gray-200 p-4">
-            <div className="flex items-center p-3 rounded-xl hover:bg-gradient-to-r hover:from-teal-50 hover:to-purple-50 transition-all duration-300 cursor-pointer group">
+            <div className="flex items-center p-3 rounded-xl hover:bg-zinc-100 transition-all duration-300 cursor-pointer group">
               <div className="relative">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center shadow-lg">
                   <span className="text-white font-semibold">
-                    {user?.name ? user.name.split(' ').map(n => n[0]).join('') : 'U'}
+                    {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('') : 'U'}
                   </span>
                 </div>
-                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-400 rounded-full border-2 border-white"></div>
+                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-zinc-900 rounded-full border-2 border-white"></div>
               </div>
               <div className="ml-3 flex-1">
-                <p className="text-sm font-semibold text-gray-900 group-hover:text-teal-600 transition-colors">
+                <p className="text-sm font-semibold text-gray-900 group-hover:text-zinc-900 transition-colors">
                   {user?.name || 'User'}
                 </p>
                 <p className="text-xs text-gray-500 capitalize">
-                  {user?.role || 'User'}
+                  {t(`roles.${user?.role?.toLowerCase()}` as any) || user?.role || 'User'}
                 </p>
                 {/* AI Credits for instructors */}
-                {user?.role === 'instructor' && (
-                  <div className="flex items-center mt-1 text-xs text-teal-600">
+                {shouldShowCredits && creditsDisplay !== null && (
+                  <div
+                    className="flex items-center mt-1 text-xs text-teal-600"
+                    title={aiCreditsError || undefined}
+                  >
                     <Zap className="h-3 w-3 mr-1" />
                     <span className="font-medium">
-                      {user?.aiCredits || 150} credits
+                      {creditsDisplay} {t('sidebar.credits')}
                     </span>
                   </div>
                 )}
@@ -439,7 +449,7 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
               />
               <div className="ml-2">
                 <h2 className="text-lg font-bold bg-gradient-to-r from-teal-500 to-purple-600 bg-clip-text text-transparent">
-                  CogneraX Learn
+                  {t('sidebar.title')}
                 </h2>
               </div>
             </div>
@@ -452,7 +462,7 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
           </div>
           
           <nav className="mt-4 flex-1 px-2 space-y-1 overflow-y-auto">
-            {menuItems.map((item) => {
+                        {finalMenuItems.map((item) => {
               const Icon = item.icon;
               return (
                 <button
@@ -488,14 +498,17 @@ export function Sidebar({ isOpen, setIsOpen, logo, user, onLogout }: SidebarProp
                   {user?.name || 'User'}
                 </p>
                 <p className="text-xs font-medium text-gray-500 capitalize">
-                  {user?.role || 'User'}
+                  {t(`roles.${user?.role?.toLowerCase()}` as any) || user?.role || 'User'}
                 </p>
                 {/* AI Credits for instructors */}
-                {user?.role === 'instructor' && (
-                  <div className="flex items-center mt-1 text-xs text-teal-600">
+                {shouldShowCredits && (
+                  <div
+                    className="flex items-center mt-1 text-xs text-teal-600"
+                    title={aiCreditsError || undefined}
+                  >
                     <Zap className="h-3 w-3 mr-1" />
                     <span className="font-medium">
-                      {user?.aiCredits || 150} credits
+                      {creditsDisplay} {t('sidebar.credits')}
                     </span>
                   </div>
                 )}

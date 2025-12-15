@@ -32,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Separator } from '../ui/separator';
+import { useLanguage } from '../context/LanguageContext';
 
 interface AICreditsManagementProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ interface AICreditsManagementProps {
 }
 
 export function AICreditsManagement({ isOpen, onClose }: AICreditsManagementProps) {
+  const { t, isRTL } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -213,16 +215,16 @@ export function AICreditsManagement({ isOpen, onClose }: AICreditsManagementProp
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <Zap className="h-6 w-6 mr-2 text-teal-600" />
-              AI Credits Management
+              {t('aiCredits.title')}
             </h2>
             <p className="text-gray-600 mt-1">
-              Manage organization AI credits and instructor allocations
+              {t('aiCredits.description')}
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -234,8 +236,8 @@ export function AICreditsManagement({ isOpen, onClose }: AICreditsManagementProp
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="instructors">Instructors</TabsTrigger>
-              <TabsTrigger value="history">Usage History</TabsTrigger>
+              <TabsTrigger value="instructors">{t('aiCredits.instructors')}</TabsTrigger>
+              <TabsTrigger value="history">{t('aiCredits.usage')}</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -246,7 +248,7 @@ export function AICreditsManagement({ isOpen, onClose }: AICreditsManagementProp
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Total Credits</p>
+                        <p className="text-sm font-medium text-gray-600">{t('aiCredits.totalCredits')}</p>
                         <p className="text-2xl font-bold text-gray-900">{orgCredits.total.toLocaleString()}</p>
                       </div>
                       <Wallet className="h-8 w-8 text-blue-600" />
@@ -258,7 +260,7 @@ export function AICreditsManagement({ isOpen, onClose }: AICreditsManagementProp
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Used Credits</p>
+                        <p className="text-sm font-medium text-gray-600">{t('aiCredits.used')}</p>
                         <p className="text-2xl font-bold text-gray-900">{orgCredits.used.toLocaleString()}</p>
                       </div>
                       <TrendingUp className="h-8 w-8 text-red-600" />
@@ -270,7 +272,7 @@ export function AICreditsManagement({ isOpen, onClose }: AICreditsManagementProp
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Remaining</p>
+                        <p className="text-sm font-medium text-gray-600">{t('aiCredits.remaining')}</p>
                         <p className="text-2xl font-bold text-gray-900">{orgCredits.remaining.toLocaleString()}</p>
                       </div>
                       <CheckCircle2 className="h-8 w-8 text-green-600" />
@@ -282,7 +284,7 @@ export function AICreditsManagement({ isOpen, onClose }: AICreditsManagementProp
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Monthly Usage</p>
+                        <p className="text-sm font-medium text-gray-600">{t('aiCredits.monthlyUsage')}</p>
                         <p className="text-2xl font-bold text-gray-900">{orgCredits.monthlyUsage.toLocaleString()}</p>
                       </div>
                       <BarChart3 className="h-8 w-8 text-purple-600" />

@@ -26,7 +26,8 @@ const mockUsers = [
 const rolePermissions = {
   admin: ['user_management', 'content_management', 'analytics', 'system_settings', 'billing', 'integrations'],
   instructor: ['course_creation', 'content_editing', 'student_management', 'grading', 'analytics_view'],
-  student: ['course_access', 'assignment_submit', 'discussion_participate', 'progress_view']
+  student: ['course_access', 'assignment_submit', 'discussion_participate', 'progress_view'],
+  parent: ['progress_view']
 };
 
 const availablePermissions = [
@@ -48,11 +49,11 @@ const availablePermissions = [
 ];
 
 export function UserAccessManagement() {
-  const { t } = useLanguage();
-  const [users, setUsers] = useState([]);
+  const { t, isRTL } = useLanguage();
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,17 +67,17 @@ export function UserAccessManagement() {
   });
 
   // Invitation management state
-  const [invitations, setInvitations] = useState([]);
-  const [invitationStats, setInvitationStats] = useState(null);
+  const [invitations, setInvitations] = useState<any[]>([]);
+  const [invitationStats, setInvitationStats] = useState<any | null>(null);
   const [creatingInvitation, setCreatingInvitation] = useState(false);
-  const [invitationRole, setInvitationRole] = useState<'instructor' | 'student'>('instructor');
+  const [invitationRole, setInvitationRole] = useState<'instructor' | 'student' | 'parent'>('instructor');
   const [invitationData, setInvitationData] = useState({
     message: '',
     description: '',
     expiresInDays: 7,
     maxUses: 50
   });
-  const [generatedInvitation, setGeneratedInvitation] = useState(null);
+  const [generatedInvitation, setGeneratedInvitation] = useState<any | null>(null);
   
   // School organization field selection
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -371,7 +372,7 @@ export function UserAccessManagement() {
 
   const handleRevokeInvitation = async (invitationId: string) => {
     try {
-      const response = await api.invitation.revokeInvitation(invitationId);
+      const response = await api.invitation.cancelInvitation(invitationId);
       if (response) {
         toast.success('Invitation revoked successfully');
         fetchInvitations();
@@ -514,7 +515,7 @@ export function UserAccessManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Error Banner */}
       {error && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -577,6 +578,7 @@ export function UserAccessManagement() {
                       <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="instructor">Instructor</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="parent">Parent</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -938,7 +940,7 @@ export function UserAccessManagement() {
                 Create New Invitation
               </CardTitle>
               <CardDescription>
-                Generate invitation links for instructors and students
+                Generate invitation links for instructors, students, and parents
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -964,6 +966,17 @@ export function UserAccessManagement() {
                 >
                   <Users className="h-4 w-4" />
                   Invite Students
+                </Button>
+                <Button
+                  onClick={() => {
+                    setInvitationRole('parent');
+                    setSelectedFieldId(''); // Reset field selection when changing role
+                  }}
+                  variant={invitationRole === 'parent' ? 'default' : 'outline'}
+                  className="flex items-center gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  Invite Parents
                 </Button>
               </div>
 

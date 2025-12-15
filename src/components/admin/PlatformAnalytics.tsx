@@ -44,7 +44,7 @@ const mockData = {
 };
 
 export function PlatformAnalytics() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +150,7 @@ export function PlatformAnalytics() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Error Banner */}
       {error && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -220,7 +220,7 @@ export function PlatformAnalytics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-sm font-medium text-gray-600">{t('analytics.totalUsers')}</p>
                 <p className="text-2xl font-bold">{data.overview?.totalUsers?.toLocaleString() || '0'}</p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <TrendingUp className="h-3 w-3 mr-1" />
@@ -238,7 +238,7 @@ export function PlatformAnalytics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Users</p>
+                <p className="text-sm font-medium text-gray-600">{t('analytics.activeUsers')}</p>
                 <p className="text-2xl font-bold">{data.overview?.activeUsers?.toLocaleString() || '0'}</p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <Activity className="h-3 w-3 mr-1" />
@@ -256,7 +256,7 @@ export function PlatformAnalytics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Courses</p>
+                <p className="text-sm font-medium text-gray-600">{t('analytics.totalCourses')}</p>
                 <p className="text-2xl font-bold">{data.overview?.totalCourses || '0'}</p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <BookOpen className="h-3 w-3 mr-1" />
@@ -274,7 +274,7 @@ export function PlatformAnalytics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Completion Rate</p>
+                <p className="text-sm font-medium text-gray-600">{t('analytics.completionRate')}</p>
                 <p className="text-2xl font-bold">{data.overview?.completionRate || '0'}%</p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <Target className="h-3 w-3 mr-1" />
@@ -292,7 +292,7 @@ export function PlatformAnalytics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Revenue</p>
+                <p className="text-sm font-medium text-gray-600">{t('analytics.revenue')}</p>
                 <p className="text-2xl font-bold">${data.overview?.revenue?.toLocaleString() || '0'}</p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <DollarSign className="h-3 w-3 mr-1" />
@@ -310,7 +310,7 @@ export function PlatformAnalytics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Platform ROI</p>
+                <p className="text-sm font-medium text-gray-600">{t('analytics.platformROI')}</p>
                 <p className="text-2xl font-bold">{data.overview?.roi || '0'}%</p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <Zap className="h-3 w-3 mr-1" />
@@ -328,10 +328,10 @@ export function PlatformAnalytics() {
       {/* Main Analytics Tabs */}
       <Tabs defaultValue="usage" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="usage">Usage Analytics</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="predictive">Predictive Analytics</TabsTrigger>
-          <TabsTrigger value="roi">ROI Analysis</TabsTrigger>
+          <TabsTrigger value="usage">{t('analytics.usageAnalytics')}</TabsTrigger>
+          <TabsTrigger value="performance">{t('analytics.performance')}</TabsTrigger>
+          <TabsTrigger value="predictive">{t('analytics.predictiveAnalytics')}</TabsTrigger>
+          <TabsTrigger value="roi">{t('analytics.roiAnalysis')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="usage" className="space-y-6">

@@ -65,7 +65,7 @@ interface StudyEvent {
 }
 
 export const StudyTools: React.FC<StudyToolsProps> = ({ user }) => {
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('notes');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [loading, setLoading] = useState(false);
@@ -475,15 +475,15 @@ export const StudyTools: React.FC<StudyToolsProps> = ({ user }) => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-cognerax-gradient bg-clip-text text-transparent">
-            {t('Study Tools')}
+            {t('studyTools.title')}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {t('Organize your learning with notes, flashcards, and study planning')}
+            {t('studyTools.subtitle')}
           </p>
         </div>
         
@@ -492,7 +492,7 @@ export const StudyTools: React.FC<StudyToolsProps> = ({ user }) => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder={t('Search notes, flashcards...')}
+              placeholder={t('studyTools.searchPlaceholder')}
               value={searchTerm}
               onChange={(e: any) => setSearchTerm(e.target.value)}
               className="pl-9 w-64"
@@ -500,10 +500,10 @@ export const StudyTools: React.FC<StudyToolsProps> = ({ user }) => {
           </div>
           <Select value={selectedCourse} onValueChange={setSelectedCourse}>
             <SelectTrigger className="w-40">
-              <SelectValue placeholder={t('All Courses')} />
+              <SelectValue placeholder={t('studyTools.allCourses')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('All Courses')}</SelectItem>
+              <SelectItem value="all">{t('studyTools.allCourses')}</SelectItem>
               {courses.map(course => (
                 <SelectItem key={course} value={course}>{course}</SelectItem>
               ))}
@@ -516,49 +516,49 @@ export const StudyTools: React.FC<StudyToolsProps> = ({ user }) => {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="notes" className="flex items-center gap-2">
             <StickyNote className="h-4 w-4" />
-            {t('Notes')}
+            {t('studyTools.tab.notes')}
           </TabsTrigger>
           <TabsTrigger value="flashcards" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
-            {t('Flashcards')}
+            {t('studyTools.tab.flashcards')}
           </TabsTrigger>
           <TabsTrigger value="calendar" className="flex items-center gap-2">
             <CalendarIcon className="h-4 w-4" />
-            {t('Study Calendar')}
+            {t('studyTools.tab.calendar')}
           </TabsTrigger>
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Archive className="h-4 w-4" />
-            {t('Overview')}
+            {t('studyTools.tab.overview')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="notes" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">{t('My Notes')}</h2>
+            <h2 className="text-xl font-semibold">{t('studyTools.myNotes')}</h2>
             <Dialog open={isNoteDialogOpen} onOpenChange={setIsNoteDialogOpen}>
               <DialogTrigger asChild>
                 <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-cognerax-gradient text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
                   <Plus className="h-4 w-4 mr-2" />
-                  {t('New Note')}
+                  {t('studyTools.newNote')}
                 </button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>{t('Create New Note')}</DialogTitle>
+                  <DialogTitle>{t('studyTools.createNote')}</DialogTitle>
                   <DialogDescription>
-                    {t('Add a new study note with highlights and bookmarks')}
+                    {t('studyTools.createNoteDesc')}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <Input
-                    placeholder={t('Note title')}
+                    placeholder={t('studyTools.noteTitle')}
                     value={newNote.title}
                     onChange={(e: any) => setNewNote({ ...newNote, title: e.target.value })}
                   />
                   <div className="grid grid-cols-2 gap-4">
                     <Select value={newNote.course} onValueChange={(value: any) => setNewNote({ ...newNote, course: value })}>
                       <SelectTrigger>
-                        <SelectValue placeholder={t('Select Course')} />
+                        <SelectValue placeholder={t('studyTools.selectCourse')} />
                       </SelectTrigger>
                       <SelectContent>
                         {courses.map(course => (
@@ -567,28 +567,28 @@ export const StudyTools: React.FC<StudyToolsProps> = ({ user }) => {
                       </SelectContent>
                     </Select>
                     <Input
-                      placeholder={t('Lesson name')}
+                      placeholder={t('studyTools.lessonName')}
                       value={newNote.lesson}
                       onChange={(e: any) => setNewNote({ ...newNote, lesson: e.target.value })}
                     />
                   </div>
                   <Textarea
-                    placeholder={t('Write your note content here...')}
+                    placeholder={t('studyTools.writeContent')}
                     value={newNote.content}
                     onChange={(e: any) => setNewNote({ ...newNote, content: e.target.value })}
                     rows={6}
                   />
                   <Input
-                    placeholder={t('Tags (comma separated)')}
+                    placeholder={t('studyTools.tags')}
                     onChange={(e: any) => setNewNote({ ...newNote, tags: e.target.value.split(',').map((tag: string) => tag.trim()) })}
                   />
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsNoteDialogOpen(false)}>
-                    {t('Cancel')}
+                    {t('studyTools.cancel')}
                   </Button>
                   <Button onClick={handleCreateNote} className="bg-cognerax-gradient">
-                    {t('Create Note')}
+                    {t('studyTools.create')}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -659,24 +659,24 @@ export const StudyTools: React.FC<StudyToolsProps> = ({ user }) => {
 
         <TabsContent value="flashcards" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">{t('Flashcards')}</h2>
+            <h2 className="text-xl font-semibold">{t('studyTools.tab.flashcards')}</h2>
             <div className="flex gap-2">
               <Button variant="outline">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {t('Review Session')}
+                {t('studyTools.reviewSession')}
               </Button>
               <Dialog open={isFlashcardDialogOpen} onOpenChange={setIsFlashcardDialogOpen}>
                 <DialogTrigger asChild>
                   <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-cognerax-gradient text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
                     <Plus className="h-4 w-4 mr-2" />
-                    {t('New Flashcard')}
+                    {t('studyTools.newFlashcard')}
                   </button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>{t('Create New Flashcard')}</DialogTitle>
+                    <DialogTitle>{t('studyTools.createFlashcard')}</DialogTitle>
                     <DialogDescription>
-                      {t('Create a flashcard for spaced repetition learning')}
+                      {t('studyTools.createFlashcardDesc')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -722,10 +722,10 @@ export const StudyTools: React.FC<StudyToolsProps> = ({ user }) => {
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsFlashcardDialogOpen(false)}>
-                      {t('Cancel')}
+                      {t('studyTools.cancel')}
                     </Button>
                     <Button onClick={handleCreateFlashcard} className="bg-cognerax-gradient">
-                      {t('Create Flashcard')}
+                      {t('studyTools.create')}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -773,19 +773,19 @@ export const StudyTools: React.FC<StudyToolsProps> = ({ user }) => {
 
         <TabsContent value="calendar" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">{t('Study Calendar')}</h2>
+            <h2 className="text-xl font-semibold">{t('studyTools.tab.calendar')}</h2>
             <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
               <DialogTrigger asChild>
                 <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-cognerax-gradient text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
                   <Plus className="h-4 w-4 mr-2" />
-                  {t('Add Event')}
+                  {t('studyTools.addEvent')}
                 </button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{t('Create Study Event')}</DialogTitle>
+                  <DialogTitle>{t('studyTools.createEvent')}</DialogTitle>
                   <DialogDescription>
-                    {t('Schedule deadlines, exams, and study sessions')}
+                    {t('studyTools.createEventDesc')}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">

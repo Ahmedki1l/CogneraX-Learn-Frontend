@@ -25,6 +25,8 @@ export class AuthApiService extends BaseApiService {
       if (jsonResponse.success && jsonResponse.user && jsonResponse.token) {
         const { user, token, refreshToken } = jsonResponse;
         console.log('Login successful, storing tokens');
+        // Clear old cached user data to prevent stale role information
+        localStorage.removeItem('user');
         this.setTokens(token, refreshToken || token);
         localStorage.setItem('user', JSON.stringify(user));
         return user;
@@ -149,7 +151,7 @@ export class AuthApiService extends BaseApiService {
   }
 
   // Refresh token (using correct endpoint)
-  async refreshToken(): Promise<{ token: string; refreshToken: string }> {
+  async refreshSessionToken(): Promise<{ token: string; refreshToken: string }> {
     return this.request('/auth/refresh', {
       method: 'POST',
     });

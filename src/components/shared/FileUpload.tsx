@@ -5,6 +5,7 @@ import { Progress } from '../ui/progress';
 import { Card, CardContent } from '../ui/card';
 import { api } from '../../services/api';
 import { toast } from 'sonner';
+import { useLanguage } from '../context/LanguageContext';
 
 interface FileUploadProps {
   type: 'avatar' | 'thumbnail' | 'document' | 'video' | 'misc';
@@ -21,6 +22,7 @@ export function FileUpload({
   onUploadComplete,
   currentFile
 }: FileUploadProps) {
+  const { t, isRTL } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>(currentFile || '');
   const [uploading, setUploading] = useState(false);

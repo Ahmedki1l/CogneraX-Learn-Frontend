@@ -36,6 +36,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Separator } from '../ui/separator';
 import { useLanguage } from '../context/LanguageContext';
+import { useAICredits } from '../context/AICreditsContext';
 import { api } from '../../services/api';
 
 interface AICreditsManagementPageProps {
@@ -44,6 +45,7 @@ interface AICreditsManagementPageProps {
 
 export function AICreditsManagementPage({ user }: AICreditsManagementPageProps) {
   const { t, isRTL } = useLanguage();
+  const { refresh: refreshAICredits } = useAICredits();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -419,12 +421,13 @@ export function AICreditsManagementPage({ user }: AICreditsManagementPageProps) 
 
     try {
       const response = await api.ai.allocateAICredits({
-        instructorId: instructorId.toString(),
+        userId: instructorId.toString(),
         amount: amount,
-        reason: 'Manual allocation'
+        description: 'Manual allocation'
       });
       if (response) {
         toast.success(`Allocated ${amount} credits to instructor`);
+        void refreshAICredits();
         
         // Refresh data
         const [creditsResponse, instructorsResponse] = await Promise.allSettled([
@@ -470,14 +473,15 @@ export function AICreditsManagementPage({ user }: AICreditsManagementPageProps) 
     
     try {
       const allocations = instructors.map(instructor => ({
-        instructorId: instructor.id.toString(),
+        userId: instructor.id.toString(),
         amount: creditsPerInstructor,
-        reason: 'Bulk allocation'
+        description: 'Bulk allocation'
       }));
 
       const response = await api.ai.bulkAllocateCredits({ allocations });
       if (response) {
         toast.success(`Allocated ${creditsPerInstructor} credits to each instructor`);
+        void refreshAICredits();
         
         // Refresh data
         const [creditsResponse, instructorsResponse] = await Promise.allSettled([
@@ -537,7 +541,7 @@ export function AICreditsManagementPage({ user }: AICreditsManagementPageProps) 
   };
 
   return (
-    <div className={`space-y-6 ${isRTL ? 'rtl' : ''}`}>
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-teal-500 to-purple-600 rounded-2xl shadow-lg">

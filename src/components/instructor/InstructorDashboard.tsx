@@ -34,6 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { api } from '../../services/api';
 import { toast } from 'sonner';
+import { useLanguage } from '../context/LanguageContext';
 
 interface InstructorDashboardProps {
   user: any;
@@ -41,6 +42,7 @@ interface InstructorDashboardProps {
 }
 
 export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDashboardProps) {
+  const { t, isRTL } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -259,7 +261,7 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -269,31 +271,31 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
     return (
       <div className="text-center py-12">
         <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Dashboard</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('instructor.dashboard.error')}</h3>
         <p className="text-gray-500 mb-4">{error}</p>
         <Button onClick={() => window.location.reload()}>
-          Try Again
+          {t('common.tryAgain')}
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Instructor Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, {user.name}</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('instructor.dashboard.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('instructor.dashboard.welcome').replace('{name}', user.name)}</p>
         </div>
         <div className="flex items-center space-x-3">
           <Button variant="outline">
-            <Bell className="h-4 w-4 mr-2" />
-            Notifications
+            <Bell className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {t('instructor.dashboard.notifications')}
           </Button>
           <Button className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700">
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Create Course
+            <PlusCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {t('instructor.dashboard.createCourse')}
           </Button>
         </div>
       </div>
@@ -304,9 +306,9 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600 mb-1">Total Students</p>
+                <p className="text-sm font-medium text-blue-600 mb-1">{t('instructor.stats.totalStudents')}</p>
                 <p className="text-3xl font-bold text-blue-900">{instructorStats.totalStudents}</p>
-                <p className="text-sm text-green-600 mt-1">+{instructorStats.newStudentsThisMonth} this month</p>
+                <p className="text-sm text-green-600 mt-1">+{instructorStats.newStudentsThisMonth} {t('instructor.stats.growth')}</p>
               </div>
               <div className="h-14 w-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Users className="h-7 w-7 text-white" />
@@ -319,9 +321,9 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600 mb-1">Active Courses</p>
+                <p className="text-sm font-medium text-green-600 mb-1">{t('instructor.stats.activeCourses')}</p>
                 <p className="text-3xl font-bold text-green-900">{instructorStats.activeCourses}</p>
-                <p className="text-sm text-green-600 mt-1">{instructorStats.totalLessons} total lessons</p>
+                <p className="text-sm text-green-600 mt-1">{instructorStats.totalLessons} {t('instructor.stats.totalLessons')}</p>
               </div>
               <div className="h-14 w-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
                 <BookOpen className="h-7 w-7 text-white" />
@@ -334,9 +336,9 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600 mb-1">Avg Rating</p>
+                <p className="text-sm font-medium text-purple-600 mb-1">{t('instructor.stats.avgRating')}</p>
                 <p className="text-3xl font-bold text-purple-900">{instructorStats.avgRating}</p>
-                <p className="text-sm text-purple-600 mt-1">{instructorStats.completionRate}% completion</p>
+                <p className="text-sm text-purple-600 mt-1">{instructorStats.completionRate}% {t('instructor.stats.completionRate')}</p>
               </div>
               <div className="h-14 w-14 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Star className="h-7 w-7 text-white" />
@@ -349,9 +351,9 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-teal-600 mb-1">Monthly Revenue</p>
+                <p className="text-sm font-medium text-teal-600 mb-1">{t('instructor.stats.monthlyRevenue')}</p>
                 <p className="text-3xl font-bold text-teal-900">${instructorStats.totalRevenue.toLocaleString()}</p>
-                <p className="text-sm text-teal-600 mt-1">+{instructorStats.monthlyEngagement}% growth</p>
+                <p className="text-sm text-teal-600 mt-1">+{instructorStats.monthlyEngagement}% {t('instructor.stats.growth')}</p>
               </div>
               <div className="h-14 w-14 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
                 <TrendingUp className="h-7 w-7 text-white" />
@@ -364,11 +366,11 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
       {/* Main Content Tabs */}
       <Tabs defaultValue="courses" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="courses">My Courses</TabsTrigger>
-          <TabsTrigger value="lessons">Recent Lessons</TabsTrigger>
-          <TabsTrigger value="students">Students</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="courses">{t('instructor.tabs.courses')}</TabsTrigger>
+          <TabsTrigger value="lessons">{t('instructor.tabs.lessons')}</TabsTrigger>
+          <TabsTrigger value="students">{t('instructor.tabs.students')}</TabsTrigger>
+          <TabsTrigger value="analytics">{t('instructor.tabs.analytics')}</TabsTrigger>
+          <TabsTrigger value="activity">{t('instructor.tabs.activity')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="courses" className="space-y-6">
@@ -377,16 +379,16 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center">
-                    <BookOpen className="h-5 w-5 mr-2 text-green-600" />
-                    My Courses
+                    <BookOpen className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-green-600`} />
+                    {t('instructor.tabs.courses')}
                   </CardTitle>
-                  <CardDescription>Manage your course content and track performance</CardDescription>
+                  <CardDescription>{t('instructor.course.manageDesc')}</CardDescription>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
-                      placeholder="Search courses..."
+                      placeholder={t('studyTools.searchPlaceholder')}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-9 w-64"
@@ -394,10 +396,10 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
                   </div>
                   <Select value={selectedCourse} onValueChange={setSelectedCourse}>
                     <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Filter by status" />
+                      <SelectValue placeholder={t('common.filter')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Courses</SelectItem>
+                      <SelectItem value="all">{t('studyTools.allCourses')}</SelectItem>
                       <SelectItem value="published">Published</SelectItem>
                       <SelectItem value="draft">Draft</SelectItem>
                       <SelectItem value="archived">Archived</SelectItem>
@@ -430,43 +432,43 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
                         <div className="grid grid-cols-3 gap-3 text-sm">
                           <div className="text-center p-2 bg-blue-50 rounded">
                             <p className="font-bold text-blue-600">{course.students}</p>
-                            <p className="text-blue-700">Students</p>
+                            <p className="text-blue-700">{t('instructor.course.students')}</p>
                           </div>
                           <div className="text-center p-2 bg-green-50 rounded">
                             <p className="font-bold text-green-600">{course.lessons}</p>
-                            <p className="text-green-700">Lessons</p>
+                            <p className="text-green-700">{t('instructor.course.lessons')}</p>
                           </div>
                           <div className="text-center p-2 bg-purple-50 rounded">
                             <p className="font-bold text-purple-600">{course.rating}</p>
-                            <p className="text-purple-700">Rating</p>
+                            <p className="text-purple-700">{t('instructor.course.rating')}</p>
                           </div>
                         </div>
 
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Completion Rate</span>
+                            <span className="text-gray-600">{t('instructor.stats.completionRate')}</span>
                             <span className="font-medium">{course.completion}%</span>
                           </div>
                           <Progress value={course.completion} className="h-2" />
                         </div>
 
                         <div className="flex items-center justify-between text-sm text-gray-500">
-                          <span>Revenue: ${course.revenue}</span>
-                          <span>Updated: {new Date(course.lastUpdated).toLocaleDateString()}</span>
+                          <span>{t('instructor.course.revenue')}: ${course.revenue}</span>
+                          <span>{t('instructor.course.updated')}: {new Date(course.lastUpdated).toLocaleDateString()}</span>
                         </div>
 
                         <div className="flex space-x-2">
                           <Button variant="outline" size="sm" className="flex-1">
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
+                            <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                            {t('instructor.course.view')}
                           </Button>
                           <Button variant="outline" size="sm" className="flex-1">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            <Edit className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                            {t('instructor.course.edit')}
                           </Button>
                           <Button variant="outline" size="sm" className="flex-1">
-                            <BarChart3 className="h-4 w-4 mr-2" />
-                            Analytics
+                            <BarChart3 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                            {t('instructor.tabs.analytics')}
                           </Button>
                         </div>
                       </div>
@@ -482,10 +484,10 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <PlayCircle className="h-5 w-5 mr-2 text-purple-600" />
-                Recent Lessons
+                <PlayCircle className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-purple-600`} />
+                {t('instructor.tabs.lessons')}
               </CardTitle>
-              <CardDescription>Monitor lesson performance and student engagement</CardDescription>
+              <CardDescription>{t('instructor.lesson.monitorDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -527,12 +529,12 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
                               onClick={() => onNavigateToLesson && onNavigateToLesson(lesson)}
                               className="bg-gradient-to-r from-teal-50 to-purple-50 hover:from-teal-100 hover:to-purple-100"
                             >
-                              <PlayCircle className="h-4 w-4 mr-2" />
+                              <PlayCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                               Preview
                             </Button>
                             <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
+                              <Edit className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                              {t('instructor.course.edit')}
                             </Button>
                           </div>
                         </div>
@@ -549,10 +551,10 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2 text-blue-600" />
-                My Students
+                <Users className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-blue-600`} />
+                {t('instructor.course.students')}
               </CardTitle>
-              <CardDescription>Track student progress and engagement</CardDescription>
+              <CardDescription>{t('instructor.students.trackDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -647,10 +649,10 @@ export function InstructorDashboard({ user, onNavigateToLesson }: InstructorDash
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-green-600" />
-                Recent Activity
+                <Activity className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-green-600`} />
+                {t('instructor.tabs.activity')}
               </CardTitle>
-              <CardDescription>Latest student interactions and course updates</CardDescription>
+              <CardDescription>{t('instructor.activity.latestDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

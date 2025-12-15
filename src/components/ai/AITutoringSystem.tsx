@@ -22,6 +22,7 @@ import { Textarea } from '../ui/textarea';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useLanguage } from '../context/LanguageContext';
+import { useAICredits } from '../context/AICreditsContext';
 import { api } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -31,6 +32,7 @@ interface AITutoringSystemProps {
 
 export function AITutoringSystem({ user }: AITutoringSystemProps) {
   const { t, isRTL } = useLanguage();
+  const { refresh: refreshAICredits } = useAICredits();
   const [activeSession, setActiveSession] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [conversationHistory, setConversationHistory] = useState([]);
@@ -209,6 +211,7 @@ export function AITutoringSystem({ user }: AITutoringSystemProps) {
           hints: response.hints || []
         };
         setConversationHistory(prev => [...prev, aiResponse]);
+        void refreshAICredits();
       } else {
         // Fallback to mock response
         const aiResponse = {
@@ -277,9 +280,9 @@ export function AITutoringSystem({ user }: AITutoringSystemProps) {
   };
 
   return (
-    <div className={`p-6 max-w-7xl mx-auto space-y-6 ${isRTL ? 'rtl' : ''}`}>
+    <div className={`p-6 max-w-7xl mx-auto space-y-6`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
-      <div className="text-center space-y-4">
+      <div className="text-center space-y-4 mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-teal-500 to-purple-600 rounded-2xl shadow-lg">
           <Brain className="h-8 w-8 text-white" />
         </div>
@@ -385,7 +388,7 @@ export function AITutoringSystem({ user }: AITutoringSystemProps) {
                     {conversationHistory.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${message.type === 'user' ? (isRTL ? 'justify-start' : 'justify-end') : (isRTL ? 'justify-end' : 'justify-start')}`}
                       >
                         <div
                           className={`max-w-[80%] rounded-lg p-3 ${
@@ -415,7 +418,7 @@ export function AITutoringSystem({ user }: AITutoringSystemProps) {
                                       key={index}
                                       className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-yellow-800"
                                     >
-                                      <Lightbulb className="h-3 w-3 inline mr-1" />
+                                      <Lightbulb className={`h-3 w-3 inline ${isRTL ? 'ml-1' : 'mr-1'}`} />
                                       {hint}
                                     </div>
                                   ))}
@@ -427,7 +430,7 @@ export function AITutoringSystem({ user }: AITutoringSystemProps) {
                       </div>
                     ))}
                     {isTyping && (
-                      <div className="flex justify-start">
+                      <div className={`flex ${isRTL ? 'justify-end' : 'justify-start'}`}>
                         <div className="bg-gray-100 rounded-lg p-3 flex items-center gap-2">
                           <Brain className="h-4 w-4 text-teal-600" />
                           <div className="flex space-x-1">

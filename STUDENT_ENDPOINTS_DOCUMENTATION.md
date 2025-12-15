@@ -19,7 +19,7 @@ Authorization: Bearer <your_jwt_token>
 1. [Student Management](#student-management)
 2. [Course Enrollment](#course-enrollment)
 3. [Lesson Progress](#lesson-progress)
-4. [Quiz & Assignments](#quiz--assignments)
+4. [Exams & Assignments](#exams--assignments)
 5. [Student Analytics](#student-analytics)
 6. [Shopping Cart & Payments](#shopping-cart--payments)
 7. [Notifications](#notifications)
@@ -629,37 +629,57 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
-## Quiz & Assignments
+## Exams & Assignments
 
-### Get Available Quizzes for Lesson
-**Endpoint:** `GET /lessons/:id/quizzes`  
-**Access:** Student (must be enrolled)
+### Get Scheduled Exams
+**Endpoint:** `GET /exams/schedule`  
+**Access:** Student
+
+**Query Parameters:**
+- `fieldId` (string, optional) - Filter by field ID
+- `courseId` (string, optional) - Filter by course ID
+- `status` (string, optional) - 'scheduled' | 'active'
+- `fromDate` (string, optional) - Start date filter (ISO format)
+- `toDate` (string, optional) - End date filter (ISO format)
+- `page` (number, optional) - Page number (default: 1)
+- `limit` (number, optional) - Items per page (default: 20)
 
 **Response:**
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "_id": "quiz_id",
-      "title": "Quiz Title",
-      "description": "Quiz description",
-      "duration": 30,
-      "passingScore": 70,
-      "totalQuestions": 10,
-      "attempts": 2,
-      "attemptsUsed": 1,
-      "bestScore": 85,
-      "status": "active"
+  "data": {
+    "exams": [
+      {
+        "id": "exam_id",
+        "title": "Midterm Examination",
+        "description": "Course midterm exam covering chapters 1-5",
+        "courseId": "course_id",
+        "courseTitle": "Introduction to Computer Science",
+        "scheduledDate": "2024-02-01T10:00:00.000Z",
+        "scheduledEndDate": "2024-02-01T12:00:00.000Z",
+        "duration": 120,
+        "totalPoints": 100,
+        "passingScore": 60,
+        "questionCount": 50,
+        "status": "scheduled",
+        "instructions": "Read all questions carefully before answering."
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "totalPages": 1
     }
-  ]
+  }
 }
 ```
 
 ---
 
-### Get Quiz Details
-**Endpoint:** `GET /quizzes/:id`  
+### Start Exam Session
+**Endpoint:** `POST /exams/:examId/start`  
 **Access:** Student (must be enrolled in course)
 
 **Response:**
@@ -667,46 +687,63 @@ Authorization: Bearer <your_jwt_token>
 {
   "success": true,
   "data": {
-    "_id": "quiz_id",
-    "title": "Quiz Title",
-    "description": "Quiz description",
-    "courseId": "course_id",
-    "lessonId": "lesson_id",
-    "duration": 30,
-    "passingScore": 70,
-    "questions": [
-      {
-        "_id": "question_id",
-        "question": "Question text?",
-        "type": "multiple_choice",
-        "options": ["Option A", "Option B", "Option C", "Option D"],
-        "points": 10
-      }
-    ],
-    "totalQuestions": 10,
-    "totalPoints": 100,
-    "attempts": 2,
-    "timeLimit": 1800
+    "session": {
+      "id": "session_id",
+      "examId": "exam_id",
+      "studentId": "student_id",
+      "startedAt": "2024-02-01T10:00:00.000Z",
+      "expiresAt": "2024-02-01T12:00:00.000Z",
+      "timeRemaining": 7200
+    },
+    "exam": {
+      "id": "exam_id",
+      "title": "Midterm Examination",
+      "description": "Course midterm exam",
+      "duration": 120,
+      "totalPoints": 100,
+      "sections": [
+        {
+          "id": "section_id",
+          "title": "Multiple Choice",
+          "questions": [
+            {
+              "id": "question_id",
+              "question": "What is the time complexity of binary search?",
+              "type": "multiple-choice",
+              "options": ["O(n)", "O(log n)", "O(n²)", "O(1)"],
+              "points": 4,
+              "difficulty": "medium"
+            }
+          ],
+          "points": 40
+        }
+      ],
+      "shuffleQuestions": true,
+      "shuffleAnswers": true,
+      "instructions": "Read all questions carefully."
+    }
   }
 }
 ```
 
+**Note:** Correct answers are NOT included when starting an exam.
+
 ---
 
-### Submit Quiz
-**Endpoint:** `POST /quizzes/:id/submit`  
-**Access:** Student (must be enrolled)
+### Save Exam Progress
+**Endpoint:** `PATCH /exams/:examId/sessions/:sessionId/progress`  
+**Access:** Student (owner of session)
 
 **Request Body:**
 ```json
 {
-  "answers": [
-    {
-      "questionId": "question_id",
-      "answer": "selected_option"
-    }
-  ],
-  "timeSpent": 1200
+  "answers": {
+    "question_id_1": 1,
+    "question_id_2": "Essay answer text...",
+    "question_id_3": 0
+  },
+  "currentQuestionIndex": 15,
+  "timeRemaining": 3600
 }
 ```
 
@@ -715,50 +752,161 @@ Authorization: Bearer <your_jwt_token>
 {
   "success": true,
   "data": {
-    "attemptId": "attempt_id",
-    "score": 85,
-    "totalPoints": 100,
-    "percentage": 85,
-    "passed": true,
-    "correctAnswers": 17,
-    "totalQuestions": 20,
-    "timeSpent": 1200,
-    "feedback": [
-      {
-        "questionId": "question_id",
-        "correct": true,
-        "yourAnswer": "option_a",
-        "correctAnswer": "option_a",
-        "explanation": "Explanation text"
-      }
-    ],
-    "completedAt": "2024-01-20T17:00:00.000Z"
+    "sessionId": "session_id",
+    "lastSavedAt": "2024-02-01T10:30:00.000Z",
+    "answersCount": 15
+  },
+  "message": "Progress saved successfully"
+}
+```
+
+---
+
+### Submit Exam
+**Endpoint:** `POST /exams/:examId/sessions/:sessionId/submit`  
+**Access:** Student (owner of session)
+
+**Request Body:**
+```json
+{
+  "answers": {
+    "question_id_1": 1,
+    "question_id_2": "Essay answer text...",
+    "question_id_3": 0
+  },
+  "submittedAt": "2024-02-01T11:45:00.000Z"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "submissionId": "submission_id",
+    "examId": "exam_id",
+    "submittedAt": "2024-02-01T11:45:00.000Z",
+    "status": "submitted",
+    "autoGradedScore": 32,
+    "pendingGrading": 2,
+    "message": "Exam submitted successfully. Essay questions are pending grading."
   }
 }
 ```
 
 ---
 
-### Get Quiz Attempts
-**Endpoint:** `GET /quizzes/:id/attempts`  
-**Access:** Student (must be enrolled)
+### Get Student Exam Grades
+**Endpoint:** `GET /exams/grades`  
+**Access:** Student
+
+**Query Parameters:**
+- `examId` (string, optional) - Filter by specific exam
+- `courseId` (string, optional) - Filter by course
+- `status` (string, optional) - 'graded' | 'pending'
+- `page` (number, optional) - Page number (default: 1)
+- `limit` (number, optional) - Items per page (default: 20)
 
 **Response:**
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "_id": "attempt_id",
-      "quizId": "quiz_id",
-      "score": 85,
-      "percentage": 85,
-      "passed": true,
-      "timeSpent": 1200,
-      "attemptNumber": 1,
-      "completedAt": "2024-01-20T17:00:00.000Z"
+  "data": {
+    "grades": [
+      {
+        "id": "grade_id",
+        "submissionId": "submission_id",
+        "examId": "exam_id",
+        "examTitle": "Midterm Examination",
+        "courseTitle": "Introduction to Computer Science",
+        "totalScore": 85,
+        "maxScore": 100,
+        "percentage": 85,
+        "letterGrade": "B+",
+        "passed": true,
+        "gradingMethod": "hybrid",
+        "gradedAt": "2024-02-02T14:00:00.000Z",
+        "questionGrades": [
+          {
+            "questionId": "question_id",
+            "pointsAwarded": 4,
+            "maxPoints": 4,
+            "feedback": "Correct!"
+          }
+        ],
+        "overallFeedback": "Good performance overall. Focus on improving essay structure."
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 3,
+      "totalPages": 1
+    },
+    "summary": {
+      "totalExams": 3,
+      "averageScore": 82,
+      "passedExams": 3,
+      "pendingGrades": 0
     }
-  ]
+  }
+}
+```
+
+---
+
+### Get Single Exam Grade Details
+**Endpoint:** `GET /exams/:examId/grades/:studentId`  
+**Access:** Student (own grades only)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "grade": {
+      "id": "grade_id",
+      "submissionId": "submission_id",
+      "examId": "exam_id",
+      "totalScore": 85,
+      "maxScore": 100,
+      "percentage": 85,
+      "letterGrade": "B+",
+      "passed": true,
+      "gradingMethod": "hybrid",
+      "gradedAt": "2024-02-02T14:00:00.000Z",
+      "questionGrades": [
+        {
+          "questionId": "question_id",
+          "question": "What is the time complexity of binary search?",
+          "type": "multiple-choice",
+          "studentAnswer": 1,
+          "correctAnswer": 1,
+          "pointsAwarded": 4,
+          "maxPoints": 4,
+          "feedback": "Correct!"
+        },
+        {
+          "questionId": "essay_question_id",
+          "question": "Explain the concept of recursion with an example.",
+          "type": "essay",
+          "studentAnswer": "Recursion is when a function calls itself...",
+          "pointsAwarded": 18,
+          "maxPoints": 20,
+          "feedback": "Good explanation but could include more examples."
+        }
+      ],
+      "overallFeedback": "Good performance overall.",
+      "strengths": ["Strong understanding of algorithms", "Clear explanations"],
+      "areasForImprovement": ["Include more examples in essays", "Time management"]
+    },
+    "exam": {
+      "title": "Midterm Examination",
+      "duration": 120,
+      "totalPoints": 100,
+      "passingScore": 60
+    }
+  }
 }
 ```
 
@@ -1094,10 +1242,13 @@ All endpoints follow a consistent error response format:
 
 - **Not Enrolled:** `You must be enrolled in this course to access this resource`
 - **Course Full:** `This course has reached maximum enrollment`
-- **Invalid ID:** `Invalid course/lesson/quiz ID format`
+- **Invalid ID:** `Invalid course/lesson/exam ID format`
 - **Already Enrolled:** `Already enrolled in this course`
 - **Assignment Late:** `Assignment submission deadline has passed`
-- **Quiz Attempts Exceeded:** `Maximum quiz attempts reached`
+- **Exam Not Available:** `This exam is not currently available`
+- **Exam Already Started:** `You have already started this exam`
+- **Exam Session Expired:** `Your exam session has expired`
+- **Exam Attempts Exceeded:** `Maximum exam attempts reached`
 
 ---
 
@@ -1137,10 +1288,17 @@ socket.on('lesson:completed', (data) => {
 });
 ```
 
-**Quiz Results:**
+**Exam Graded:**
 ```javascript
-socket.on('quiz:graded', (data) => {
-  // data: { quizId, score, passed }
+socket.on('exam:graded', (data) => {
+  // data: { examId, submissionId, score, passed, letterGrade }
+});
+```
+
+**Exam Starting Soon:**
+```javascript
+socket.on('exam:starting-soon', (data) => {
+  // data: { examId, title, scheduledDate, minutesUntilStart }
 });
 ```
 
@@ -1184,6 +1342,8 @@ For questions or issues:
 
 ---
 
-**Last Updated:** January 2025  
+**Last Updated:** December 2025  
 **API Version:** v1
+
+> **Note:** The Quiz system has been replaced with a comprehensive Exam system. All quiz-related endpoints are deprecated. Use the new `/exams/*` endpoints instead.
 

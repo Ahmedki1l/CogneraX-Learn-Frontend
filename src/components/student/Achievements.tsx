@@ -54,7 +54,7 @@ export function Achievements({ user }: AchievementsProps) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(false);
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   // Fetch achievements from API
   React.useEffect(() => {
@@ -387,12 +387,12 @@ export function Achievements({ user }: AchievementsProps) {
   ];
 
   const categories = [
-    { id: 'all', label: 'All Achievements', icon: Award },
-    { id: 'completion', label: 'Completion', icon: BookOpen },
-    { id: 'performance', label: 'Performance', icon: Trophy },
-    { id: 'streak', label: 'Streaks', icon: Flame },
-    { id: 'social', label: 'Social', icon: Users },
-    { id: 'special', label: 'Special', icon: Sparkles }
+    { id: 'all', label: t('achievements.category.all'), icon: Award },
+    { id: 'completion', label: t('achievements.category.completion'), icon: BookOpen },
+    { id: 'performance', label: t('achievements.category.performance'), icon: Trophy },
+    { id: 'streak', label: t('achievements.category.streak'), icon: Flame },
+    { id: 'social', label: t('achievements.category.social'), icon: Users },
+    { id: 'special', label: t('achievements.category.special'), icon: Sparkles }
   ];
 
   const filteredAchievements = selectedCategory === 'all' 
@@ -407,15 +407,15 @@ export function Achievements({ user }: AchievementsProps) {
   const getRarityBadge = (rarity: string) => {
     switch (rarity) {
       case 'common':
-        return <Badge className="bg-gray-100 text-gray-800 border-gray-300">Common</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-300">{t('achievements.rarity.common')}</Badge>;
       case 'rare':
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-300">Rare</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-300">{t('achievements.rarity.rare')}</Badge>;
       case 'epic':
-        return <Badge className="bg-purple-100 text-purple-800 border-purple-300">Epic</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800 border-purple-300">{t('achievements.rarity.epic')}</Badge>;
       case 'legendary':
-        return <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">Legendary</Badge>;
+        return <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">{t('achievements.rarity.legendary')}</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">Common</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('achievements.rarity.common')}</Badge>;
     }
   };
 
@@ -461,7 +461,7 @@ export function Achievements({ user }: AchievementsProps) {
         {!achievement.isEarned && achievement.progress !== undefined && achievement.maxProgress && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Progress</span>
+              <span className="text-gray-600">{t('achievements.progress')}</span>
               <span className="font-medium text-gray-700">
                 {achievement.progress}/{achievement.maxProgress}
               </span>
@@ -477,41 +477,39 @@ export function Achievements({ user }: AchievementsProps) {
         {achievement.isEarned && achievement.earnedDate && (
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Calendar className="h-4 w-4" />
-            <span>Earned on {new Date(achievement.earnedDate).toLocaleDateString()}</span>
+            <span>{t('achievements.earnedOn')} {new Date(achievement.earnedDate).toLocaleDateString()}</span>
           </div>
         )}
 
         {/* Requirements */}
         <div className="text-sm text-gray-500">
-          <span className="font-medium">Requirements: </span>
+          <span className="font-medium">{t('achievements.requirements')} </span>
           {achievement.requirements}
         </div>
 
-        {/* Points */}
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="flex items-center gap-1">
             <Gift className="h-4 w-4 text-purple-500" />
             <span className="text-sm font-medium text-purple-600">
-              {achievement.points} points
+              {achievement.points} {t('achievements.points')}
             </span>
           </div>
           
           {!achievement.isEarned && achievement.progress !== undefined && achievement.maxProgress && (
             <div className="text-xs text-gray-500">
-              {Math.round((achievement.progress / achievement.maxProgress) * 100)}% complete
+              {Math.round((achievement.progress / achievement.maxProgress) * 100)}% {t('achievements.complete')}
             </div>
           )}
         </div>
 
-        {/* Claim Button for Ready Achievements */}
         {!achievement.isEarned && achievement.progress !== undefined && achievement.maxProgress && 
          achievement.progress >= achievement.maxProgress && (
           <Button 
             onClick={() => handleClaimAchievement(achievement.id)}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
           >
-            <Gift className="h-4 w-4 mr-2" />
-            Claim Achievement
+            <Gift className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {t('achievements.claimAchievement')}
           </Button>
         )}
       </CardContent>
@@ -519,7 +517,7 @@ export function Achievements({ user }: AchievementsProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
@@ -536,7 +534,7 @@ export function Achievements({ user }: AchievementsProps) {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Points</p>
+                <p className="text-sm font-medium text-gray-600">{t('achievements.totalPoints')}</p>
                 <p className="text-2xl font-bold text-gray-900">{totalPoints}</p>
               </div>
               <Gift className="h-8 w-8 text-yellow-500" />
@@ -548,7 +546,7 @@ export function Achievements({ user }: AchievementsProps) {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Earned</p>
+                <p className="text-sm font-medium text-gray-600">{t('achievements.earned')}</p>
                 <p className="text-2xl font-bold text-gray-900">{earnedAchievements.length}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
@@ -560,7 +558,7 @@ export function Achievements({ user }: AchievementsProps) {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-sm font-medium text-gray-600">{t('achievements.pending')}</p>
                 <p className="text-2xl font-bold text-gray-900">{pendingAchievements.length}</p>
               </div>
               <Lock className="h-8 w-8 text-blue-500" />
@@ -572,7 +570,7 @@ export function Achievements({ user }: AchievementsProps) {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Completion</p>
+                <p className="text-sm font-medium text-gray-600">{t('achievements.completion')}</p>
                 <p className="text-2xl font-bold text-gray-900">{completionRate}%</p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-500" />
@@ -608,9 +606,9 @@ export function Achievements({ user }: AchievementsProps) {
       {/* Achievements Tabs */}
       <Tabs defaultValue="all" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">All Achievements</TabsTrigger>
-          <TabsTrigger value="earned">Earned ({earnedAchievements.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pending ({pendingAchievements.length})</TabsTrigger>
+          <TabsTrigger value="all">{t('achievements.tabs.all')}</TabsTrigger>
+          <TabsTrigger value="earned">{t('achievements.tabs.earned')} ({earnedAchievements.length})</TabsTrigger>
+          <TabsTrigger value="pending">{t('achievements.tabs.pending')} ({pendingAchievements.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
@@ -627,8 +625,8 @@ export function Achievements({ user }: AchievementsProps) {
               <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <Trophy className="h-8 w-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No achievements earned yet</h3>
-              <p className="text-gray-500">Start learning to unlock your first achievement!</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('achievements.noEarned')}</h3>
+              <p className="text-gray-500">{t('achievements.noEarnedDesc')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -668,11 +666,11 @@ export function Achievements({ user }: AchievementsProps) {
       <Card className="bg-gradient-to-r from-teal-50 to-purple-50 border-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Crown className="h-6 w-6 text-yellow-500" />
-            Achievement Leaderboard
+            <Crown className={`h-6 w-6 text-yellow-500 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {t('achievements.leaderboard')}
           </CardTitle>
           <CardDescription>
-            See how you rank among your peers in achievement points
+            {t('achievements.leaderboardDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -680,15 +678,15 @@ export function Achievements({ user }: AchievementsProps) {
             <div className="flex items-center justify-between p-3 bg-white rounded-lg">
               <div className="flex items-center gap-3">
                 <Medal className="h-5 w-5 text-yellow-500" />
-                <span className="font-medium">You</span>
+                <span className="font-medium">{t('achievements.you')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-purple-600">{totalPoints} points</span>
-                <Badge variant="outline">Rank #12</Badge>
+                <span className="font-bold text-purple-600">{totalPoints} {t('achievements.points')}</span>
+                <Badge variant="outline">{t('achievements.rank')} #12</Badge>
               </div>
             </div>
             <Button variant="outline" className="w-full">
-              View Full Leaderboard
+              {t('achievements.viewLeaderboard')}
             </Button>
           </div>
         </CardContent>

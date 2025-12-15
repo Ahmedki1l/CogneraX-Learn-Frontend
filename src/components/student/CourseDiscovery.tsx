@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Course {
   id: string;
@@ -59,6 +60,7 @@ interface CourseDiscoveryProps {
 }
 
 export function CourseDiscovery({ user }: CourseDiscoveryProps) {
+  const { t, isRTL } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedField, setSelectedField] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
@@ -405,18 +407,18 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
           {course.isPopular && (
             <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0">
               <TrendingUp className="h-3 w-3 mr-1" />
-              Popular
+              {t('courseDiscovery.popular')}
             </Badge>
           )}
           {course.isNew && (
             <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
               <Zap className="h-3 w-3 mr-1" />
-              New
+              {t('courseDiscovery.new')}
             </Badge>
           )}
           {course.isFree && (
             <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0">
-              Free
+              {t('courseDiscovery.free')}
             </Badge>
           )}
         </div>
@@ -478,7 +480,7 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
           ))}
           {course.skills.length > 3 && (
             <Badge variant="secondary" className="text-xs">
-              +{course.skills.length - 3} more
+              +{course.skills.length - 3} {t('courseDiscovery.more')}
             </Badge>
           )}
         </div>
@@ -487,7 +489,7 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="flex items-center gap-2">
             {course.isFree ? (
-              <span className="text-xl font-bold text-green-600">Free</span>
+              <span className="text-xl font-bold text-green-600">{t('courseDiscovery.free')}</span>
             ) : (
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold text-gray-900">${course.price}</span>
@@ -507,10 +509,10 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
               {course.isEnrolled ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />
-                  Enrolled
+                  {t('courseDiscovery.enrolled')}
                 </>
               ) : (
-                'Enroll Free'
+                t('courseDiscovery.enrollFree')
               )}
             </Button>
           ) : (
@@ -518,12 +520,12 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
               {course.isEnrolled ? (
                 <Button disabled className="bg-gray-200 text-gray-500">
                   <Check className="h-4 w-4 mr-2" />
-                  Enrolled
+                  {t('courseDiscovery.enrolled')}
                 </Button>
               ) : isInCart(course.id) ? (
                 <Button disabled className="bg-green-500 text-white">
                   <Check className="h-4 w-4 mr-2" />
-                  In Cart
+                  {t('courseDiscovery.inCart')}
                 </Button>
               ) : (
                 <Button
@@ -531,7 +533,7 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
                   className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700 text-white"
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  Add to Cart
+                  {t('courseDiscovery.addToCart')}
                 </Button>
               )}
             </div>
@@ -542,14 +544,14 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
-          Course Discovery
+          {t('courseDiscovery.title')}
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Explore thousands of courses from expert instructors and advance your skills in technology, business, and beyond.
+          {t('courseDiscovery.subtitle')}
         </p>
       </div>
 
@@ -557,28 +559,28 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
       <Card className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Search</label>
+            <label className="text-sm font-medium text-gray-700">{t('courseDiscovery.search')}</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400`} />
               <Input
-                placeholder="Search courses, instructors, skills..."
+                placeholder={t('courseDiscovery.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className={isRTL ? 'pr-10' : 'pl-10'}
               />
             </div>
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Field</label>
+            <label className="text-sm font-medium text-gray-700">{t('courseDiscovery.field')}</label>
             <Select value={selectedField} onValueChange={setSelectedField}>
               <SelectTrigger>
-                <SelectValue placeholder="All Fields" />
+                <SelectValue placeholder={t('courseDiscovery.allFields')} />
               </SelectTrigger>
               <SelectContent>
                 {fields.map((field) => (
                   <SelectItem key={field} value={field}>
-                    {field === 'all' ? 'All Fields' : field}
+                    {field === 'all' ? t('courseDiscovery.allFields') : field}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -586,15 +588,15 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Level</label>
+            <label className="text-sm font-medium text-gray-700">{t('courseDiscovery.level')}</label>
             <Select value={selectedLevel} onValueChange={setSelectedLevel}>
               <SelectTrigger>
-                <SelectValue placeholder="All Levels" />
+                <SelectValue placeholder={t('courseDiscovery.allLevels')} />
               </SelectTrigger>
               <SelectContent>
                 {levels.map((level) => (
                   <SelectItem key={level} value={level}>
-                    {level === 'all' ? 'All Levels' : level}
+                    {level === 'all' ? t('courseDiscovery.allLevels') : level}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -602,15 +604,15 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Price</label>
+            <label className="text-sm font-medium text-gray-700">{t('courseDiscovery.price')}</label>
             <Select value={priceFilter} onValueChange={setPriceFilter}>
               <SelectTrigger>
-                <SelectValue placeholder="All Prices" />
+                <SelectValue placeholder={t('courseDiscovery.allPrices')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="free">Free</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="all">{t('courseDiscovery.allPrices')}</SelectItem>
+                <SelectItem value="free">{t('courseDiscovery.free')}</SelectItem>
+                <SelectItem value="paid">{t('courseDiscovery.paid')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -620,7 +622,7 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
       {/* Results */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">
-          {filteredCourses.length} courses found
+          {filteredCourses.length} {t('courseDiscovery.coursesFound')}
         </h2>
       </div>
 
@@ -636,8 +638,8 @@ export function CourseDiscovery({ user }: CourseDiscoveryProps) {
           <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
             <Search className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
-          <p className="text-gray-500">Try adjusting your search criteria or filters.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('courseDiscovery.noCourses')}</h3>
+          <p className="text-gray-500">{t('courseDiscovery.noCoursesDesc')}</p>
         </div>
       )}
     </div>

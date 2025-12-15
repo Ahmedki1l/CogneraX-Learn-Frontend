@@ -33,6 +33,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { api } from '../../services/api';
 import { toast } from 'sonner';
+import { useLanguage } from '../context/LanguageContext';
 
 interface StudentDashboardProps {
   user: any;
@@ -40,6 +41,7 @@ interface StudentDashboardProps {
 }
 
 export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardProps) {
+  const { t, isRTL } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -215,7 +217,7 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+          <p className="text-gray-600">{t('student.dashboard.loading')}</p>
         </div>
       </div>
     );
@@ -232,10 +234,10 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Dashboard</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('student.dashboard.failedToLoad')}</h3>
             <p className="text-gray-600 mb-4">{error}</p>
             <Button onClick={() => window.location.reload()}>
-              Retry
+              {t('student.dashboard.retry')}
             </Button>
           </div>
         </Card>
@@ -244,21 +246,21 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Learning Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, {user?.name || 'Student'}! Let's continue learning.</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('student.dashboard.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('student.dashboard.welcome').replace('{name}', user?.name || 'Student')}</p>
         </div>
         <div className="flex items-center space-x-3">
           <Button variant="outline">
-            <Calendar className="h-4 w-4 mr-2" />
-            Schedule
+            <Calendar className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {t('common.schedule')}
           </Button>
           <Button className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700">
-            <Search className="h-4 w-4 mr-2" />
-            Explore Courses
+            <Search className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {t('student.dashboard.explore')}
           </Button>
         </div>
       </div>
@@ -269,9 +271,9 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600 mb-1">Enrolled Courses</p>
+                <p className="text-sm font-medium text-blue-600 mb-1">{t('student.stats.enrolled')}</p>
                 <p className="text-3xl font-bold text-blue-900">{studentStats.enrolledCourses}</p>
-                <p className="text-sm text-green-600 mt-1">{studentStats.completedCourses} completed</p>
+                <p className="text-sm text-green-600 mt-1">{studentStats.completedCourses} {t('student.stats.completed')}</p>
               </div>
               <div className="h-14 w-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                 <BookOpen className="h-7 w-7 text-white" />
@@ -284,9 +286,9 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600 mb-1">Study Progress</p>
+                <p className="text-sm font-medium text-green-600 mb-1">{t('student.stats.progress')}</p>
                 <p className="text-3xl font-bold text-green-900">{studentStats.overallProgress}%</p>
-                <p className="text-sm text-green-600 mt-1">{studentStats.completedLessons}/{studentStats.totalLessons} lessons</p>
+                <p className="text-sm text-green-600 mt-1">{studentStats.completedLessons}/{studentStats.totalLessons} {t('common.lessons')}</p>
               </div>
               <div className="h-14 w-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Target className="h-7 w-7 text-white" />
@@ -299,9 +301,9 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600 mb-1">Study Time</p>
+                <p className="text-sm font-medium text-purple-600 mb-1">{t('student.stats.studyTime')}</p>
                 <p className="text-3xl font-bold text-purple-900">{studentStats.studyTime}h</p>
-                <p className="text-sm text-purple-600 mt-1">{studentStats.currentStreak} day streak</p>
+                <p className="text-sm text-purple-600 mt-1">{studentStats.currentStreak} {t('student.stats.streak')}</p>
               </div>
               <div className="h-14 w-14 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Clock className="h-7 w-7 text-white" />
@@ -314,9 +316,9 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-teal-600 mb-1">Average Grade</p>
+                <p className="text-sm font-medium text-teal-600 mb-1">{t('student.stats.avgGrade')}</p>
                 <p className="text-3xl font-bold text-teal-900">{studentStats.averageGrade}</p>
-                <p className="text-sm text-teal-600 mt-1">{studentStats.certificatesEarned} certificates</p>
+                <p className="text-sm text-teal-600 mt-1">{studentStats.certificatesEarned} {t('student.stats.certificates')}</p>
               </div>
               <div className="h-14 w-14 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Trophy className="h-7 w-7 text-white" />
@@ -334,10 +336,10 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <PlayCircle className="h-5 w-5 mr-2 text-green-600" />
-                Continue Learning
+                <PlayCircle className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-green-600`} />
+                {t('student.dashboard.continueLearning')}
               </CardTitle>
-              <CardDescription>Pick up where you left off</CardDescription>
+              <CardDescription>{t('student.dashboard.pickUp')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -373,7 +375,7 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
                             <span className="text-sm font-medium">{course.progress}%</span>
                             <Progress value={course.progress} className="w-24 h-2" />
                           </div>
-                          <p className="text-sm text-gray-500">{course.completedLessons}/{course.lessons} lessons</p>
+                          <p className="text-sm text-gray-500">{course.completedLessons}/{course.lessons} {t('common.lessons')}</p>
                           <p className="text-xs text-gray-400">{course.estimatedTime}</p>
                         </div>
                       </div>
@@ -381,15 +383,15 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
                       <div className="mt-4 pt-4 border-t border-gray-100">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-gray-900">Next: {course.nextLesson}</p>
+                            <p className="text-sm font-medium text-gray-900">{t('student.dashboard.next')} {course.nextLesson}</p>
                             <div className="flex items-center space-x-1 mt-1">
                               <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                              <span className="text-sm text-gray-600">{course.rating} rating</span>
+                              <span className="text-sm text-gray-600">{course.rating} {t('instructor.course.rating')}</span>
                             </div>
                           </div>
                           <Button className="bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700">
-                            <PlayCircle className="h-4 w-4 mr-2" />
-                            Continue
+                            <PlayCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                            {t('student.dashboard.continue')}
                           </Button>
                         </div>
                       </div>
@@ -404,10 +406,10 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-purple-600" />
-                Recent Lessons
+                <Activity className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-purple-600`} />
+                {t('student.dashboard.recentLessons')}
               </CardTitle>
-              <CardDescription>Your learning activity</CardDescription>
+              <CardDescription>{t('student.dashboard.yourActivity')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -453,7 +455,7 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
                         size="sm"
                         onClick={() => onNavigateToLesson && onNavigateToLesson(lesson)}
                       >
-                        {lesson.completed ? 'Review' : 'Continue'}
+                        {lesson.completed ? t('student.dashboard.review') : t('student.dashboard.continue')}
                       </Button>
                     </div>
                   </div>
@@ -469,8 +471,8 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-red-600" />
-                Upcoming Deadlines
+                <Calendar className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-red-600`} />
+                {t('student.dashboard.deadlines')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -497,8 +499,8 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
-                This Week's Activity
+                <BarChart3 className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-blue-600`} />
+                {t('student.dashboard.activity')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -525,8 +527,8 @@ export function StudentDashboard({ user, onNavigateToLesson }: StudentDashboardP
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Trophy className="h-5 w-5 mr-2 text-yellow-600" />
-                Achievements
+                <Trophy className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} text-yellow-600`} />
+                {t('student.dashboard.achievements')}
               </CardTitle>
             </CardHeader>
             <CardContent>
